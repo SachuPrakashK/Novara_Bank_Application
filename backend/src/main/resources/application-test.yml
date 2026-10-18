@@ -1,0 +1,14 @@
+spring:
+  security:
+    oauth2:
+      client:
+        registration:
+          novara:
+            client-secret: test-only-client-secret
+      resourceserver:
+        jwt:
+          issuer-uri: http://issuer.test
+novara:
+  security:
+    audience: novara-api
+    csrf-cookie-secure: false

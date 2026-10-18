@@ -1,0 +1,26 @@
+<main class="auth-page">
+  <section class="auth-story" aria-label="Novara Bank introduction">
+    <novara-logo />
+    <div class="story-copy"><span class="eyebrow">PRIVATE DIGITAL BANKING</span><h1>Banking, thoughtfully reimagined.</h1><p>One calm, secure place to understand your money and move forward with confidence.</p><div class="trust"><span>◆</span><span><b>Security by design</b><small>Your session and activity are continuously protected.</small></span></div></div>
+    <footer>© 2026 Novara Bank · Privacy · Security</footer>
+  </section>
+  <section class="auth-panel"><div class="mobile-brand"><novara-logo /></div><div class="form-wrap">
+    <span class="eyebrow">WELCOME BACK</span><h2>Sign in to Novara</h2><p class="intro">Access your accounts and financial overview.</p>
+    @if (error()) { <div class="alert" role="alert">{{ error() }}</div> }
+    @if (demoEnabled) {
+      <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+        <label>Customer ID or username<input formControlName="username" autocomplete="username" placeholder="Enter your customer ID" /></label>
+        @if (form.controls.username.invalid && form.controls.username.touched) { <small class="field-error">Enter your customer ID or username.</small> }
+        <label>Password<span class="password-field"><input formControlName="password" [type]="showPassword() ? 'text' : 'password'" autocomplete="current-password" placeholder="Enter your password" /><button type="button" (click)="showPassword.set(!showPassword())">{{ showPassword() ? 'Hide' : 'Show' }}</button></span></label>
+        @if (form.controls.password.invalid && form.controls.password.touched) { <small class="field-error">Enter a password of at least 8 characters.</small> }
+        <div class="form-row"><label class="check"><input type="checkbox" formControlName="remember" /> Remember this device</label></div>
+        <button class="primary" type="submit" [disabled]="loading()">{{ loading() ? 'Signing in…' : 'Sign in to demo' }}</button>
+      </form>
+      <button class="demo" type="button" (click)="enterDemo()">Explore the fictional customer demo</button>
+    } @else {
+      <p class="notice">Continue to Novara's identity provider. Passwords, MFA codes, and passkeys are never handled by this application.</p>
+      <button class="primary" type="button" (click)="continueSecurely()">Continue securely</button>
+    }
+    <p class="help">Need help? <a routerLink="/support">Contact Novara support</a></p><p class="notice">Never share your password or verification code. Novara will never call to ask for them.</p>
+  </div></section>
+</main>

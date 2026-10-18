@@ -1,0 +1,69 @@
+spring:
+  application:
+    name: novara-banking
+  datasource:
+    url: ${NOVARA_DB_URL:jdbc:postgresql://localhost:5432/novara}
+    username: ${NOVARA_DB_USER:novara_app}
+    password: ${NOVARA_DB_PASSWORD:}
+    hikari:
+      maximum-pool-size: ${NOVARA_DB_POOL_SIZE:10}
+  flyway:
+    enabled: true
+  security:
+    oauth2:
+      client:
+        registration:
+          novara:
+            provider: novara
+            client-id: ${NOVARA_OIDC_CLIENT_ID:novara-bff}
+            client-secret: ${NOVARA_OIDC_CLIENT_SECRET}
+            authorization-grant-type: authorization_code
+            redirect-uri: "{baseUrl}/login/oauth2/code/{registrationId}"
+            scope: openid,profile,email
+        provider:
+          novara:
+            authorization-uri: ${NOVARA_OIDC_AUTHORIZATION_URI:http://localhost:8081/realms/novara/protocol/openid-connect/auth}
+            token-uri: ${NOVARA_OIDC_TOKEN_URI:http://localhost:8081/realms/novara/protocol/openid-connect/token}
+            jwk-set-uri: ${NOVARA_OIDC_JWKS_URI:http://localhost:8081/realms/novara/protocol/openid-connect/certs}
+            user-info-uri: ${NOVARA_OIDC_USERINFO_URI:http://localhost:8081/realms/novara/protocol/openid-connect/userinfo}
+            user-name-attribute: sub
+      resourceserver:
+        jwt:
+          issuer-uri: ${NOVARA_OIDC_ISSUER:http://localhost:8081/realms/novara}
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+server:
+  forward-headers-strategy: framework
+  servlet:
+    session:
+      timeout: ${NOVARA_SESSION_IDLE_TIMEOUT:15m}
+      cookie:
+        name: NOVARA_SESSION
+        http-only: true
+        secure: ${NOVARA_SESSION_COOKIE_SECURE:true}
+        same-site: lax
+        path: /
+  error:
+    include-message: never
+    include-stacktrace: never
+novara:
+  security:
+    audience: ${NOVARA_OIDC_AUDIENCE:novara-api}
+    issuer: ${NOVARA_OIDC_ISSUER:http://localhost:8081/realms/novara}
+    absolute-session-lifetime: ${NOVARA_SESSION_ABSOLUTE_LIFETIME:8h}
+    frontend-uri: ${NOVARA_FRONTEND_URI:http://localhost:4200}
+    csrf-cookie-secure: ${NOVARA_CSRF_COOKIE_SECURE:true}
+    step-up-transfer-threshold-minor: ${NOVARA_STEP_UP_TRANSFER_THRESHOLD_MINOR:10000000}
+    step-up-max-age: ${NOVARA_STEP_UP_MAX_AGE:5m}
+  cors:
+    allowed-origin: ${NOVARA_ALLOWED_ORIGIN:http://localhost:4200}
+logging:
+  pattern:
+    console: '{"timestamp":"%d{yyyy-MM-dd''T''HH:mm:ss.SSSXXX}","level":"%p","logger":"%logger{36}","message":"%replace(%m){''[\r\n]'',''_''}","correlationId":"%X{correlationId:-}"}%n'

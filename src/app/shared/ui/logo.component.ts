@@ -1,0 +1,3 @@
+import { ChangeDetectionStrategy, Component } from '@angular/core';
+@Component({ selector: 'novara-logo', template: `<span class="mark" aria-hidden="true">N</span><span class="wordmark">NOVARA <b>BANK</b></span>`, styles: [`:host{display:inline-flex;align-items:center;gap:.7rem}.mark{display:grid;place-items:center;width:2.15rem;height:2.15rem;border-radius:.65rem;background:var(--novara-primary);color:#fff;font:700 1.15rem/1 var(--novara-font-display);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}.wordmark{font-size:.82rem;letter-spacing:.14em;color:var(--novara-text-primary);font-weight:700}.wordmark b{color:var(--novara-gold);font-weight:700}`], changeDetection: ChangeDetectionStrategy.OnPush })
+export class LogoComponent {}

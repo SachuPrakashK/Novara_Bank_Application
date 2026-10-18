@@ -1,0 +1,58 @@
+{
+  "realm": "novara",
+  "enabled": true,
+  "displayName": "Novara Bank",
+  "registrationAllowed": false,
+  "resetPasswordAllowed": true,
+  "rememberMe": false,
+  "bruteForceProtected": true,
+  "failureFactor": 5,
+  "waitIncrementSeconds": 60,
+  "maxFailureWaitSeconds": 900,
+  "otpPolicyType": "totp",
+  "otpPolicyAlgorithm": "HmacSHA256",
+  "otpPolicyDigits": 6,
+  "otpPolicyPeriod": 30,
+  "webAuthnPolicyRpEntityName": "Novara Bank",
+  "webAuthnPolicySignatureAlgorithms": ["ES256", "RS256"],
+  "webAuthnPolicyUserVerificationRequirement": "required",
+  "roles": {
+    "realm": [
+      { "name": "customer" }, { "name": "teller" }, { "name": "branch_manager" },
+      { "name": "operations" }, { "name": "compliance" }, { "name": "administrator" }
+    ]
+  },
+  "clients": [
+    {
+      "clientId": "novara-bff",
+      "name": "Novara browser BFF",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${NOVARA_BFF_CLIENT_SECRET}",
+      "publicClient": false,
+      "standardFlowEnabled": true,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": false,
+      "redirectUris": ["http://localhost:8080/login/oauth2/code/novara"],
+      "webOrigins": ["http://localhost:4200"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:4200/login"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience-novara-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": { "included.custom.audience": "novara-api", "access.token.claim": "true", "id.token.claim": "false" }
+        }
+      ]
+    }
+  ],
+  "requiredActions": [
+    { "alias": "CONFIGURE_TOTP", "name": "Configure OTP", "providerId": "CONFIGURE_TOTP", "enabled": true, "defaultAction": true },
+    { "alias": "webauthn-register", "name": "Webauthn Register", "providerId": "webauthn-register", "enabled": true, "defaultAction": false }
+  ]
+}
