@@ -1,4 +1,4 @@
-import type { ApplicationConfig} from '@angular/core';
+import type { ApplicationConfig } from '@angular/core';
 import { inject, provideAppInitializer, provideBrowserGlobalErrorListeners } from '@angular/core';
 import { provideHttpClient, withFetch } from '@angular/common/http';
 import { withInterceptors, withXsrfConfiguration } from '@angular/common/http';
@@ -16,6 +16,9 @@ import { HttpPaymentsApi } from './core/payments/http-payments.api';
 import { MockPaymentsApi } from './core/payments/mock-payments.api';
 import { PAYMENTS_API } from './core/payments/payments-api';
 import { environment } from '../environments/environment';
+import { BENEFICIARIES_API } from './core/beneficiaries/beneficiaries-api';
+import { HttpBeneficiariesApi } from './core/beneficiaries/http-beneficiaries.api';
+import { MockBeneficiariesApi } from './core/beneficiaries/mock-beneficiaries.api';
 import { routes } from './app.routes';
 
 export const appConfig: ApplicationConfig = {
@@ -34,13 +37,35 @@ export const appConfig: ApplicationConfig = {
     HttpAuthApi,
     MockPaymentsApi,
     HttpPaymentsApi,
-    { provide: BANKING_API, useFactory: () => inject(NOVARA_CONFIG).useMockApi ? inject(MockBankingApi) : inject(HttpBankingApi) },
-    { provide: AUTH_API, useFactory: () => inject(NOVARA_CONFIG).useMockApi ? inject(MockAuthApi) : inject(HttpAuthApi) },
-    { provide: PAYMENTS_API, useFactory: () => inject(NOVARA_CONFIG).useMockApi ? inject(MockPaymentsApi) : inject(HttpPaymentsApi) },
+    HttpBeneficiariesApi,
+    MockBeneficiariesApi,
+    {
+      provide: BANKING_API,
+      useFactory: () =>
+        inject(NOVARA_CONFIG).useMockApi ? inject(MockBankingApi) : inject(HttpBankingApi),
+    },
+    {
+      provide: AUTH_API,
+      useFactory: () =>
+        inject(NOVARA_CONFIG).useMockApi ? inject(MockAuthApi) : inject(HttpAuthApi),
+    },
+    {
+      provide: PAYMENTS_API,
+      useFactory: () =>
+        inject(NOVARA_CONFIG).useMockApi ? inject(MockPaymentsApi) : inject(HttpPaymentsApi),
+    },
+    {
+      provide: BENEFICIARIES_API,
+      useFactory: () =>
+        inject(NOVARA_CONFIG).useMockApi
+          ? inject(MockBeneficiariesApi)
+          : inject(HttpBeneficiariesApi),
+    },
     provideAppInitializer(() => {
       const config = inject(NOVARA_CONFIG);
-      if (config.production && config.useMockApi) throw new Error('Mock banking API must never run in production.');
+      if (config.production && config.useMockApi)
+        throw new Error('Mock banking API must never run in production.');
       return inject(AuthService).initialize();
     }),
-  ]
+  ],
 };

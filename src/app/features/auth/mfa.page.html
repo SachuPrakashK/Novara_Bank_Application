@@ -1,0 +1,34 @@
+<main class="auth-page verification-page">
+  <section class="auth-story verification-story" aria-label="Novara Bank identity protection">
+    <div class="verification-brand"><novara-logo /></div>
+    <div class="verification-story-body">
+      <div class="story-copy"><span class="eyebrow">IDENTITY PROTECTION</span><h1>Your security is our priority.</h1><p>Verify your identity to continue banking with confidence.</p></div>
+      <div class="identity-art" aria-hidden="true">
+        <svg viewBox="0 0 520 390" role="presentation" focusable="false">
+          <defs><linearGradient id="shield-surface" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#f1dba5"/><stop offset="1" stop-color="#b88a35"/></linearGradient><linearGradient id="identity-glass" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff" stop-opacity=".14"/><stop offset="1" stop-color="#fff" stop-opacity=".035"/></linearGradient></defs>
+          <circle class="identity-ring ring-one" cx="286" cy="196" r="154"/><circle class="identity-ring ring-two" cx="286" cy="196" r="116"/><path class="identity-line" d="M32 302c86-71 145 5 224-55 72-55 124-63 230-25"/>
+          <g class="identity-card"><rect x="104" y="124" width="214" height="142" rx="20" fill="url(#identity-glass)"/><circle cx="160" cy="180" r="25"/><path d="M123 235c7-31 66-31 74 0m39-63h49m-49 24h58m-58 24h42"/></g>
+          <g class="identity-shield"><path d="M337 101c37 26 69 27 97 31v79c0 66-44 101-97 124-53-23-97-58-97-124v-79c29-4 61-5 97-31Z" fill="url(#shield-surface)"/><path d="m305 213 23 23 44-53"/></g>
+          <circle class="identity-dot" cx="86" cy="96" r="5"/><circle class="identity-dot" cx="468" cy="276" r="4"/>
+        </svg>
+      </div>
+    </div>
+    <footer>Protected by Novara identity services</footer>
+  </section>
+  <section class="auth-panel verification-panel"><div class="form-wrap verification-form-wrap">
+    <a class="back verification-back" routerLink="/login"><novara-icon name="arrow-left"/>Back to sign in</a>
+    <div class="security-icon verification-icon" aria-hidden="true"><novara-icon name="shield"/></div>
+    <span class="eyebrow">SECURE VERIFICATION</span><h2>Verify your identity</h2>
+    <p class="intro" id="verification-help">Enter the 6-digit verification code sent to your trusted device ending in {{ destinationHint() }}.</p>
+    <div class="verification-progress" aria-label="Authentication progress"><span class="complete">Sign in</span><i aria-hidden="true"></i><span class="current" aria-current="step">Verify identity</span></div>
+    <form (submit)="submit(); $event.preventDefault()" novalidate>
+      <label for="verification-code">Verification code</label>
+      <input id="verification-code" class="otp" [formControl]="code" inputmode="numeric" autocomplete="one-time-code" maxlength="6" pattern="[0-9]{6}" placeholder="000000" aria-describedby="verification-help code-guidance" [attr.aria-invalid]="code.invalid && code.touched" />
+      <small id="code-guidance" class="code-guidance">Use the current six-digit code. Codes are never stored by Novara.</small>
+      @if(code.invalid && code.touched && !error()){<div class="field-error" role="alert">Enter the complete 6-digit verification code.</div>}
+      @if(error()){<div class="alert" role="alert">{{error()}}</div>}
+      <button class="primary verification-submit" type="submit" [disabled]="loading()" [attr.aria-busy]="loading()">{{loading()?'Verifying…':'Verify and continue'}}</button>
+    </form>
+    <p class="verification-advice"><novara-icon name="lock"/><span><b>Keep your code private</b>Novara will never ask you to share it over a call or message.</span></p>
+  </div></section>
+</main>

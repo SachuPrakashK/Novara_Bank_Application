@@ -11,9 +11,9 @@ describe('HttpPaymentsApi contract', () => {
     const api = TestBed.inject(HttpPaymentsApi); const http = TestBed.inject(HttpTestingController);
     const quote = { quoteId: 'quote-1', sourceAccountId: 'source-1', sourceLabel: 'Source', sourceMaskedNumber: '1234', beneficiaryId: 'destination-1', beneficiaryName: 'Destination', beneficiaryMaskedNumber: '5678', amount: { amountMinor: 1250, currency: 'INR' as const }, fee: { amountMinor: 0, currency: 'INR' as const }, totalDebit: { amountMinor: 1250, currency: 'INR' as const }, method: 'INTERNAL' as const, processingMessage: 'Immediate', expiresAt: new Date().toISOString(), note: 'Rent' };
     api.submitPayment({ quoteId: 'quote-1', idempotencyKey: 'idempotency-1', quote }).subscribe();
-    const request = http.expectOne('/api/transfers/internal');
+    const request = http.expectOne('/api/payments/quote-1/confirm');
     expect(request.request.method).toBe('POST'); expect(request.request.headers.get('Idempotency-Key')).toBe('idempotency-1');
-    expect(request.request.body).toEqual({ sourceAccountId: 'source-1', destinationAccountId: 'destination-1', amountMinor: 1250, currency: 'INR', note: 'Rent' });
-    request.flush({ id: 'transfer-1', status: 'COMPLETED', reference: 'NOV-1', createdAt: new Date().toISOString() }); http.verify();
+    expect(request.request.body).toEqual({});
+    request.flush({ id: 'transfer-1', status: 'COMPLETED', reference: 'NOV-1', createdAt: new Date().toISOString(),amountMinor:1250,feeMinor:0,totalDebitMinor:1250,currency:'INR',method:'INTERNAL',sourceAccountId:'source-1',sourceLabel:'Source',sourceMaskedNumber:'1234',destinationId:'destination-1',destinationName:'Destination',destinationMaskedNumber:'5678',expiresAt:new Date().toISOString(),timeline:[] }); http.verify();
   });
 });

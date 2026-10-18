@@ -2,10 +2,14 @@ package com.novara.banking;
 
 import com.novara.banking.ledger.*;
 import com.novara.banking.account.AccountHoldService;
+import com.novara.banking.beneficiary.BeneficiaryService;
+import com.novara.banking.beneficiary.CreateBeneficiaryRequest;
 import com.novara.banking.reconciliation.ReconciliationService;
 import com.novara.banking.shared.DomainException;
 import com.novara.banking.transfer.InternalTransferRequest;
 import com.novara.banking.transfer.InternalTransferService;
+import com.novara.banking.payment.*;
+import com.novara.banking.identity.CurrentIdentity.FederatedIdentity;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -48,11 +52,11 @@ class BankingIntegrationTest {
     @Container static final PostgreSQLContainer<?> POSTGRES=new PostgreSQLContainer<>("postgres:17-alpine").withDatabaseName("novara_test").withUsername("novara").withPassword("test-only");
     @DynamicPropertySource static void database(DynamicPropertyRegistry registry){registry.add("spring.datasource.url",POSTGRES::getJdbcUrl);registry.add("spring.datasource.username",POSTGRES::getUsername);registry.add("spring.datasource.password",POSTGRES::getPassword);}
     @MockBean JwtDecoder jwtDecoder;
-    @Autowired JdbcClient jdbc; @Autowired LedgerPostingService ledger; @Autowired InternalTransferService transfers; @Autowired ReconciliationService reconciliation; @Autowired AccountHoldService holds; @Autowired MockMvc mockMvc;
+    @Autowired JdbcClient jdbc; @Autowired LedgerPostingService ledger; @Autowired InternalTransferService transfers; @Autowired ReconciliationService reconciliation; @Autowired AccountHoldService holds; @Autowired BeneficiaryService beneficiaries; @Autowired PaymentService payments; @Autowired PaymentScheduleService schedules; @Autowired MockMvc mockMvc;
     UUID sourceId,destinationId; long sourceLedger,destinationLedger;
 
     @BeforeEach void seed(){
-        jdbc.sql("TRUNCATE reconciliation_exceptions,reconciliation_runs,outbox_events,audit_events,idempotency_records,transfers,account_holds,journal_lines,journals,posting_batches,account_owners,bank_accounts,ledger_balances,ledger_accounts,customers RESTART IDENTITY CASCADE").update();
+        jdbc.sql("TRUNCATE payment_schedule_occurrences,payment_schedules,payment_status_events,payment_intents,payment_limit_policies,beneficiary_verifications,beneficiaries,reconciliation_exceptions,reconciliation_runs,outbox_events,audit_events,idempotency_records,transfers,account_holds,journal_lines,journals,posting_batches,account_owners,bank_accounts,ledger_balances,ledger_accounts,customers RESTART IDENTITY CASCADE").update();
         long customer=jdbc.sql("INSERT INTO customers(identity_issuer,identity_subject,display_name) VALUES('http://localhost:8081/realms/novara','oidc-customer-1','Fictional Customer') RETURNING id").query(Long.class).single();
         var first=createAccount("SAVINGS-1","hash-1","•••• 1001",100_000);sourceId=first.publicId;sourceLedger=first.ledgerId;
         var second=createAccount("SAVINGS-2","hash-2","•••• 1002",50_000);destinationId=second.publicId;destinationLedger=second.ledgerId;
@@ -223,6 +227,82 @@ class BankingIntegrationTest {
             .andExpect(result -> assertThat(result.getResponse().getHeader("Access-Control-Allow-Origin")).isNull());
     }
 
+    @Test void beneficiaryCreationIsOwnedPendingAndIdempotent() {
+        var request=beneficiaryRequest("123456789012");
+        var first=beneficiaries.create(issuer(),"oidc-customer-1","beneficiary-create-key-01",request,"corr");
+        var replay=beneficiaries.create(issuer(),"oidc-customer-1","beneficiary-create-key-01",request,"corr");
+        assertThat(replay.id()).isEqualTo(first.id());
+        assertThat(first.status()).isEqualTo("PENDING_VERIFICATION");
+        assertThat(first.maskedAccount()).isEqualTo("•••• 9012");
+        assertThat(jdbc.sql("SELECT count(*) FROM beneficiary_verifications WHERE status='PENDING'").query(Long.class).single()).isEqualTo(1);
+        assertThat(jdbc.sql("SELECT count(*) FROM beneficiaries").query(Long.class).single()).isEqualTo(1);
+    }
+
+    @Test void duplicateBeneficiaryAndChangedIdempotentPayloadAreRejected() {
+        beneficiaries.create(issuer(),"oidc-customer-1","beneficiary-create-key-02",beneficiaryRequest("123456789012"),"corr");
+        assertThatThrownBy(() -> beneficiaries.create(issuer(),"oidc-customer-1","beneficiary-create-key-03",beneficiaryRequest("123456789012"),"corr"))
+            .isInstanceOf(DomainException.class).hasMessageContaining("already exists");
+        assertThatThrownBy(() -> beneficiaries.create(issuer(),"oidc-customer-1","beneficiary-create-key-02",beneficiaryRequest("999999999999"),"corr"))
+            .isInstanceOf(DomainException.class).hasMessageContaining("different beneficiary details");
+    }
+
+    @Test void beneficiaryOwnershipDoesNotRevealAnotherCustomersRecord() {
+        var beneficiary=beneficiaries.create(issuer(),"oidc-customer-1","beneficiary-create-key-04",beneficiaryRequest("123456789012"),"corr");
+        jdbc.sql("INSERT INTO customers(identity_issuer,identity_subject,display_name) VALUES(:issuer,'oidc-customer-2','Second Customer')").param("issuer",issuer()).update();
+        assertThatThrownBy(() -> beneficiaries.requireOwned(issuer(),"oidc-customer-2",beneficiary.id()))
+            .isInstanceOf(DomainException.class).hasMessageContaining("not found");
+    }
+
+    @Test void beneficiaryVerificationAppliesCoolingPeriodAndFailureRestricts() {
+        var accepted=beneficiaries.create(issuer(),"oidc-customer-1","beneficiary-create-key-05",beneficiaryRequest("123456789012"),"corr");
+        var active=beneficiaries.completeVerification(accepted.id(),true,"sandbox-verification-1");
+        assertThat(active.status()).isEqualTo("ACTIVE"); assertThat(active.availableFrom()).isAfter(Instant.now());
+        var rejected=beneficiaries.create(issuer(),"oidc-customer-1","beneficiary-create-key-06",beneficiaryRequest("987654321098"),"corr");
+        assertThat(beneficiaries.completeVerification(rejected.id(),false,"sandbox-verification-2").status()).isEqualTo("RESTRICTED");
+    }
+
+    @Test void beneficiaryDeactivationRequiresCsrfAndRecentProviderMfa() throws Exception {
+        var beneficiary=beneficiaries.create(issuer(),"oidc-customer-1","beneficiary-create-key-07",beneficiaryRequest("123456789012"),"corr");
+        mockMvc.perform(delete("/api/v1/beneficiaries/"+beneficiary.id()).with(customerLogin())).andExpect(status().isForbidden());
+        mockMvc.perform(delete("/api/v1/beneficiaries/"+beneficiary.id()).with(customerLogin()).with(csrf())).andExpect(status().isForbidden());
+        assertThat(beneficiaries.requireOwned(issuer(),"oidc-customer-1",beneficiary.id()).status()).isEqualTo("PENDING_VERIFICATION");
+    }
+
+    @Test void serverIntentPostsOwnAccountPaymentOnceAndKeepsJournalBalanced() {
+        var intent=payments.createIntent(identity(),new CreatePaymentIntentRequest(sourceId,CreatePaymentIntentRequest.DestinationType.OWN_ACCOUNT,destinationId,2500,"INR","INTERNAL","Own transfer"),"corr");
+        assertThat(intent.status()).isEqualTo("PENDING_AUTHORIZATION");
+        var completed=payments.confirm(identity(),intent.id(),"payment-confirm-key-01","corr");
+        var replay=payments.confirm(identity(),intent.id(),"payment-confirm-key-01","corr");
+        assertThat(completed.status()).isEqualTo("COMPLETED");assertThat(replay.reference()).isEqualTo(completed.reference());
+        assertThat(balance(sourceLedger)).isEqualTo(97_500);assertThat(balance(destinationLedger)).isEqualTo(52_500);
+        assertThat(jdbc.sql("SELECT sum(CASE WHEN direction='DEBIT' THEN amount_minor ELSE -amount_minor END) FROM journal_lines").query(Long.class).single()).isZero();
+    }
+
+    @Test void beneficiaryPaymentRequiresResolutionVerificationAndElapsedCooling() {
+        var beneficiary=beneficiaries.create(issuer(),"oidc-customer-1","beneficiary-payment-key-01",beneficiaryRequest("123456789012"),"corr");
+        var command=new CreatePaymentIntentRequest(sourceId,CreatePaymentIntentRequest.DestinationType.BENEFICIARY,beneficiary.id(),100,"INR","INTERNAL",null);
+        assertThatThrownBy(()->payments.createIntent(identity(),command,"corr")).isInstanceOf(DomainException.class);
+        beneficiaries.completeVerification(beneficiary.id(),true,"verified-internal",destinationId);
+        assertThatThrownBy(()->payments.createIntent(identity(),command,"corr")).isInstanceOf(DomainException.class);
+        jdbc.sql("UPDATE beneficiaries SET cooling_until=now()-interval '1 second' WHERE public_id=:id").param("id",beneficiary.id()).update();
+        assertThat(payments.createIntent(identity(),command,"corr").destinationMaskedNumber()).isNotBlank();
+    }
+
+    @Test void paymentLimitsRejectExcessAndUnauthorizedIncrease() {
+        jdbc.sql("INSERT INTO payment_limit_policies(customer_id,method,per_payment_minor,daily_minor) SELECT id,'INTERNAL',1000,1500 FROM customers WHERE identity_subject='oidc-customer-1'").update();
+        assertThatThrownBy(()->payments.createIntent(identity(),new CreatePaymentIntentRequest(sourceId,CreatePaymentIntentRequest.DestinationType.OWN_ACCOUNT,destinationId,1001,"INR","INTERNAL",null),"corr")).isInstanceOf(DomainException.class);
+        var first=payments.createIntent(identity(),new CreatePaymentIntentRequest(sourceId,CreatePaymentIntentRequest.DestinationType.OWN_ACCOUNT,destinationId,1000,"INR","INTERNAL",null),"corr");payments.confirm(identity(),first.id(),"payment-limit-key-001","corr");
+        var second=payments.createIntent(identity(),new CreatePaymentIntentRequest(sourceId,CreatePaymentIntentRequest.DestinationType.OWN_ACCOUNT,destinationId,600,"INR","INTERNAL",null),"corr");
+        assertThatThrownBy(()->payments.confirm(identity(),second.id(),"payment-limit-key-002","corr")).isInstanceOf(DomainException.class);
+        assertThatThrownBy(()->payments.lowerCustomerLimit(identity(),2000,"corr")).isInstanceOf(DomainException.class);
+    }
+
+    @Test void futureScheduleIsDurableOwnedAndCancellable() {
+        var schedule=schedules.create(identity(),new CreatePaymentScheduleRequest(sourceId,CreatePaymentIntentRequest.DestinationType.OWN_ACCOUNT,destinationId,500,"INR","Future",Instant.now().plusSeconds(3600),"Asia/Kolkata",CreatePaymentScheduleRequest.Recurrence.MONTHLY,null,12),"corr");
+        assertThat(schedule.status()).isEqualTo("ACTIVE");assertThat(schedules.cancel(identity(),schedule.id(),"corr").status()).isEqualTo("CANCELLED");
+        assertThatThrownBy(()->schedules.requireOwned(new FederatedIdentity(issuer(),"another-customer"),schedule.id())).isInstanceOf(DomainException.class);
+    }
+
     private org.springframework.test.web.servlet.request.RequestPostProcessor customerLogin(){
         return oidcLogin().idToken(token -> token.issuer("http://localhost:8081/realms/novara").subject("oidc-customer-1"))
             .authorities(createAuthorityList("ROLE_CUSTOMER"));
@@ -231,6 +311,9 @@ class BankingIntegrationTest {
     private boolean attempt(CountDownLatch start,String key,long amount)throws InterruptedException{start.await();try{transfers.execute("oidc-customer-1",key,request(amount),"corr");return true;}catch(DomainException expected){return false;}}
     private boolean attemptReversal(CountDownLatch start,long journalId,String batch,String journal)throws InterruptedException{start.await();try{ledger.reverse(journalId,batch,journal);return true;}catch(DomainException expected){return false;}}
     private InternalTransferRequest request(long amount){return new InternalTransferRequest(sourceId,destinationId,amount,"INR","test");}
+    private CreateBeneficiaryRequest beneficiaryRequest(String account){return new CreateBeneficiaryRequest("Fictional Beneficiary","Test",account,"NOVA0001","Novara Bank","INTERNAL");}
+    private String issuer(){return "http://localhost:8081/realms/novara";}
+    private FederatedIdentity identity(){return new FederatedIdentity(issuer(),"oidc-customer-1");}
     private long balance(long ledgerId){return jdbc.sql("SELECT balance_minor FROM ledger_balances WHERE ledger_account_id=:id").param("id",ledgerId).query(Long.class).single();}
     private SeedAccount createAccount(String code,String hash,String masked,long balance){
         long ledgerId=jdbc.sql("INSERT INTO ledger_accounts(code,name,classification,currency) VALUES(:code,:code,'LIABILITY','INR') RETURNING id").param("code",code).query(Long.class).single();

@@ -1,4 +1,10 @@
 @use 'styles/tokens';
+@import '@fontsource/poppins/400.css';
+@import '@fontsource/poppins/500.css';
+@import '@fontsource/poppins/600.css';
+@import '@fontsource/poppins/700.css';
 
 *,*::before,*::after{box-sizing:border-box}html{color-scheme:light dark;background:var(--novara-bg);font-family:var(--novara-font);scroll-behavior:smooth}body{margin:0;background:var(--novara-bg);color:var(--novara-text-primary);font-size:16px;line-height:1.5;text-rendering:optimizeLegibility}button,input,select{font:inherit}button,a,input,select{outline:none}button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{box-shadow:var(--novara-focus-ring)}.sr-only{position:absolute!important;width:1px!important;height:1px!important;padding:0!important;margin:-1px!important;overflow:hidden!important;clip:rect(0,0,0,0)!important;white-space:nowrap!important;border:0!important}.skip-link{position:fixed;z-index:100;top:.5rem;left:.5rem;transform:translateY(-150%);padding:.7rem 1rem;border-radius:.5rem;background:var(--novara-primary);color:#fff}.skip-link:focus{transform:none}.novara-money{font-variant-numeric:tabular-nums;font-feature-settings:'tnum'}
 @media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}}
+img,svg{display:block;max-width:100%}button{touch-action:manipulation}textarea{font:inherit;color:inherit}a,button{transition:color var(--novara-transition),background-color var(--novara-transition),border-color var(--novara-transition),box-shadow var(--novara-transition)}
+.info a{display:inline-flex;padding:.75rem 1rem;border:1px solid var(--novara-border-strong);border-radius:.65rem;background:var(--novara-action-secondary);color:var(--novara-action-secondary-text);font-size:.75rem;font-weight:650;text-decoration:none}
