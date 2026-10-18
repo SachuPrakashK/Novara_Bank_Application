@@ -23,13 +23,17 @@ public class StepUpAuthorizationService {
 
     public void requireForTransfer(long amountMinor, Authentication authentication) {
         if (amountMinor < transferThresholdMinor) return;
+        requireForSensitiveAction(authentication, "Recent identity-provider MFA is required for this transfer.");
+    }
+
+    public void requireForSensitiveAction(Authentication authentication, String message) {
         Instant authenticatedAt = claimAsInstant(authentication.getPrincipal(), "auth_time");
         Object amr = claim(authentication.getPrincipal(), "amr");
         boolean strongMethod = amr instanceof Collection<?> methods && methods.stream()
             .map(Object::toString).anyMatch(method -> method.equals("otp") || method.equals("webauthn") || method.equals("mfa"));
         boolean recent = authenticatedAt != null && authenticatedAt.plus(maximumAge).isAfter(Instant.now());
         if (!strongMethod || !recent) {
-            throw new DomainException(HttpStatus.FORBIDDEN, "STEP_UP_REQUIRED", "Recent identity-provider MFA is required for this transfer.");
+            throw new DomainException(HttpStatus.FORBIDDEN, "STEP_UP_REQUIRED", message);
         }
     }
 

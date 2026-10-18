@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { delay, of, throwError } from 'rxjs';
 import type { Observable } from 'rxjs';
 import type { PaymentsApi } from './payments-api';
-import type { CreateBeneficiaryCommand, PaymentBeneficiary, PaymentDraft, PaymentQuote, PaymentResult, SubmitPaymentCommand } from './payment.models';
+import type { CreateBeneficiaryCommand, CreateScheduleCommand, PaymentBeneficiary, PaymentDraft, PaymentLimits, PaymentPage, PaymentQuote, PaymentResult, PaymentSchedule, SubmitPaymentCommand } from './payment.models';
 
 @Injectable()
 export class MockPaymentsApi implements PaymentsApi {
@@ -12,6 +12,7 @@ export class MockPaymentsApi implements PaymentsApi {
     { id: 'ben-003', name: 'Aster Homes', bankName: 'Unity Bank', maskedAccount: '•••• 1260', favorite: false, status: 'COOLING_PERIOD', availableFrom: '2026-10-16T11:00:00+05:30' },
   ];
   private readonly results = new Map<string, PaymentResult>();
+  private schedules: PaymentSchedule[] = [];
 
   getBeneficiaries(): Observable<readonly PaymentBeneficiary[]> { return of(this.beneficiaries).pipe(delay(250)); }
 
@@ -44,4 +45,11 @@ export class MockPaymentsApi implements PaymentsApi {
     const result = this.results.get(key);
     return result ? of(result).pipe(delay(250)) : throwError(() => new Error('Payment not found'));
   }
+  getPayments(): Observable<PaymentPage> { return of({ items: [], page: 0, size: 20, total: 0 }).pipe(delay(200)); }
+  getPayment(): Observable<PaymentQuote> { return throwError(() => new Error('Payment not found')); }
+  getLimits(): Observable<PaymentLimits> { return of<PaymentLimits>({ perPaymentMinor: 50000000, dailyLimitMinor: 100000000, usedTodayMinor: 0, availableTodayMinor: 100000000, currency: 'INR', bankingTimezone: 'Asia/Kolkata' }).pipe(delay(150)); }
+  lowerDailyLimit(amountMinor: number): Observable<PaymentLimits> { return of<PaymentLimits>({ perPaymentMinor: Math.min(50000000, amountMinor), dailyLimitMinor: amountMinor, usedTodayMinor: 0, availableTodayMinor: amountMinor, customerSelectedDailyMinor: amountMinor, currency: 'INR', bankingTimezone: 'Asia/Kolkata' }).pipe(delay(200)); }
+  getSchedules(): Observable<readonly PaymentSchedule[]> { return of(this.schedules).pipe(delay(150)); }
+  createSchedule(command: CreateScheduleCommand): Observable<PaymentSchedule> { const schedule: PaymentSchedule = { id: crypto.randomUUID(), status: 'ACTIVE', recurrence: command.recurrence, timezone: command.timezone, sourceAccountId: command.sourceAccountId, sourceMaskedNumber: '•••• 4821', destinationName: 'Saved recipient', destinationMaskedNumber: '•••• 3491', amountMinor: command.amountMinor, currency: 'INR', nextExecutionAt: command.firstExecutionAt, endAt: command.endAt, maximumOccurrences: command.maximumOccurrences, executedOccurrences: 0, description: command.description }; this.schedules=[schedule,...this.schedules]; return of(schedule).pipe(delay(250)); }
+  cancelSchedule(id: string): Observable<PaymentSchedule> { const current=this.schedules.find(s=>s.id===id); if(!current)return throwError(()=>new Error('Schedule not found')); const changed={...current,status:'CANCELLED' as const};this.schedules=this.schedules.map(s=>s.id===id?changed:s);return of(changed).pipe(delay(200)); }
 }

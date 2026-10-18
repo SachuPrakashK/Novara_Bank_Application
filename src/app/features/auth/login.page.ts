@@ -4,8 +4,9 @@ import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../core/auth/auth.service';
 import { NOVARA_CONFIG } from '../../core/config/app-config';
 import { LogoComponent } from '../../shared/ui/logo.component';
+import { IconComponent } from '../../shared/ui/icon.component';
 
-@Component({ selector: 'app-login', imports: [ReactiveFormsModule, RouterLink, LogoComponent], templateUrl: './login.page.html', styleUrl: './auth.scss', changeDetection: ChangeDetectionStrategy.OnPush })
+@Component({ selector: 'app-login', imports: [ReactiveFormsModule, RouterLink, LogoComponent, IconComponent], templateUrl: './login.page.html', styleUrl: './auth.scss', changeDetection: ChangeDetectionStrategy.OnPush })
 export class LoginPage {
   protected readonly showPassword = signal(false); protected readonly loading = signal(false); protected readonly error = signal('');
   protected readonly form = new FormGroup({ username: new FormControl('', { nonNullable: true, validators: [Validators.required] }), password: new FormControl('', { nonNullable: true, validators: [Validators.required, Validators.minLength(8)] }), remember: new FormControl(false, { nonNullable: true }) });

@@ -64,6 +64,15 @@ novara:
     step-up-max-age: ${NOVARA_STEP_UP_MAX_AGE:5m}
   cors:
     allowed-origin: ${NOVARA_ALLOWED_ORIGIN:http://localhost:4200}
+  beneficiaries:
+    hash-key: ${NOVARA_BENEFICIARY_HASH_KEY}
+    cooling-period: ${NOVARA_BENEFICIARY_COOLING_PERIOD:24h}
+  payments:
+    banking-timezone: ${NOVARA_BANKING_TIMEZONE:Asia/Kolkata}
+    scheduler-delay: ${NOVARA_PAYMENT_SCHEDULER_DELAY:30000}
+    limits:
+      per-payment-minor: ${NOVARA_PAYMENT_PER_TRANSACTION_LIMIT_MINOR:50000000}
+      daily-minor: ${NOVARA_PAYMENT_DAILY_LIMIT_MINOR:100000000}
 logging:
   pattern:
     console: '{"timestamp":"%d{yyyy-MM-dd''T''HH:mm:ss.SSSXXX}","level":"%p","logger":"%logger{36}","message":"%replace(%m){''[\r\n]'',''_''}","correlationId":"%X{correlationId:-}"}%n'

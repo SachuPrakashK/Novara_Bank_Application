@@ -1,26 +1,42 @@
-<div class="shell">
+<div class="shell" [class.sidebar-collapsed]="sidebarCollapsed()">
   <a class="skip-link" href="#main-content">Skip to main content</a>
-  <aside class="sidebar" [class.open]="navOpen()" aria-label="Primary navigation">
-    <div class="brand"><novara-logo /><button class="close-nav" (click)="navOpen.set(false)" aria-label="Close navigation">×</button></div>
+  <aside class="sidebar" [class.open]="navOpen()" [class.collapsed]="sidebarCollapsed()" aria-label="Primary navigation">
+    <div class="brand"><novara-logo [compact]="sidebarCollapsed()"/><button class="collapse-nav" type="button" (click)="toggleSidebar()" [attr.aria-expanded]="!sidebarCollapsed()" [attr.aria-label]="sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'" [attr.title]="sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"><novara-icon [name]="sidebarCollapsed() ? 'panel-left-open' : 'panel-left-close'"/></button><button class="close-nav" type="button" (click)="navOpen.set(false)" aria-label="Close navigation"><novara-icon name="close"/></button></div>
     <nav>
-      @for (item of primaryNav; track item.path) { <a [routerLink]="item.path" routerLinkActive="active" (click)="navOpen.set(false)"><span aria-hidden="true">{{ item.icon }}</span>{{ item.label }}</a> }
+      @for (item of primaryNav; track item.path) {
+        <a [routerLink]="item.path" routerLinkActive="active" (click)="navOpen.set(false)" [attr.aria-label]="sidebarCollapsed() ? item.label : null" [attr.title]="sidebarCollapsed() ? item.label : null"><novara-icon [name]="item.icon"/><span>{{ item.label }}</span></a>
+      }
     </nav>
-    <div class="sidebar-foot"><a routerLink="/security"><span aria-hidden="true">♢</span> Security center</a><button (click)="logout()"><span aria-hidden="true">↪</span> Sign out</button></div>
+    <div class="sidebar-foot">
+      <a routerLink="/security" [attr.aria-label]="sidebarCollapsed() ? 'Security center' : null" [attr.title]="sidebarCollapsed() ? 'Security center' : null"><novara-icon name="shield"/><span>Security center</span></a>
+      <button (click)="logout()" [attr.aria-label]="sidebarCollapsed() ? 'Sign out' : null" [attr.title]="sidebarCollapsed() ? 'Sign out' : null"><novara-icon name="logout"/><span>Sign out</span></button>
+    </div>
   </aside>
   @if (navOpen()) { <button class="backdrop" aria-label="Close navigation" (click)="navOpen.set(false)"></button> }
   <section class="workspace">
-    <header class="topbar"><button class="menu" (click)="navOpen.set(true)" aria-label="Open navigation">☰</button><label class="search"><span aria-hidden="true">⌕</span><span class="sr-only">Search Novara</span><input type="search" placeholder="Search accounts, transactions…" /></label><div class="header-actions"><button (click)="toggleTheme()" [attr.aria-label]="'Switch to ' + (theme() === 'light' ? 'dark' : 'light') + ' mode'">{{ theme() === 'light' ? '◐' : '☀' }}</button><a routerLink="/notifications" aria-label="Notifications">♧<span class="notification-dot"></span></a><a class="profile" routerLink="/profile"><span class="avatar">{{ customer()?.initials ?? 'NB' }}</span><span><b>{{ customer()?.firstName ?? 'Customer' }}</b><small>{{ customer()?.tier ?? 'Novara Banking' }}</small></span></a></div></header>
+    <header class="topbar">
+      <button class="menu" (click)="navOpen.set(true)" aria-label="Open navigation"><novara-icon name="menu"/></button>
+      <a class="search" routerLink="/transactions" aria-label="Search transactions"><novara-icon name="search"/><span>Search accounts and transactions</span><kbd>/</kbd></a>
+      <div class="header-actions">
+        <button (click)="toggleTheme()" [attr.aria-label]="'Switch to ' + (theme() === 'light' ? 'dark' : 'light') + ' mode'"><novara-icon [name]="theme() === 'light' ? 'moon' : 'sun'"/></button>
+        <a routerLink="/notifications" aria-label="Notifications"><novara-icon name="bell"/><span class="notification-dot"></span></a>
+        <a class="profile" routerLink="/profile"><span class="avatar">{{ customer()?.initials ?? 'NB' }}</span><span><b>{{ customer()?.firstName ?? 'Customer' }}</b><small>{{ customer()?.tier ?? 'Novara Banking' }}</small></span></a>
+      </div>
+    </header>
     <main id="main-content" tabindex="-1"><router-outlet /></main>
-    <nav class="mobile-nav" aria-label="Mobile navigation">@for (item of primaryNav.slice(0, 4); track item.path) { <a [routerLink]="item.path" routerLinkActive="active"><span aria-hidden="true">{{ item.icon }}</span><small>{{ item.label }}</small></a> }<button (click)="navOpen.set(true)"><span aria-hidden="true">•••</span><small>More</small></button></nav>
+    <nav class="mobile-nav" aria-label="Mobile navigation">
+      @for (item of primaryNav.slice(0, 4); track item.path) { <a [routerLink]="item.path" routerLinkActive="active"><novara-icon [name]="item.icon"/><small>{{ item.label }}</small></a> }
+      <button (click)="navOpen.set(true)"><novara-icon name="menu"/><small>More</small></button>
+    </nav>
   </section>
 </div>
 @if (notifications.current(); as notification) {
-  <div class="toast" role="status"><span>{{ notification.message }}</span><button (click)="notifications.dismiss()" aria-label="Dismiss notification">×</button></div>
+  <div class="toast" role="status"><novara-icon name="alert"/><span>{{ notification.message }}</span><button (click)="notifications.dismiss()" aria-label="Dismiss notification"><novara-icon name="close"/></button></div>
 }
 @if (session.sessionState() === 'warning') {
   <div class="dialog-backdrop" role="presentation">
     <section class="session-dialog" role="alertdialog" aria-modal="true" aria-labelledby="session-title" aria-describedby="session-description">
-      <span class="dialog-icon" aria-hidden="true">◷</span><p class="dialog-overline">SECURITY NOTICE</p><h2 id="session-title">Still banking with us?</h2>
+      <span class="dialog-icon"><novara-icon name="shield" label="Security notice"/></span><p class="dialog-overline">SECURITY NOTICE</p><h2 id="session-title">Still banking with us?</h2>
       <p id="session-description">For your security, this session will end in <b>{{ session.remainingSeconds() }} seconds</b>.</p>
       <button #sessionAction class="dialog-primary" type="button" (click)="continueSession()" [disabled]="continuing()">{{ continuing() ? 'Securing session…' : 'Continue session' }}</button>
       <button class="dialog-secondary" type="button" (click)="logout()">Sign out now</button>
@@ -30,7 +46,7 @@
 @if (session.sessionState() === 'expired') {
   <div class="dialog-backdrop" role="presentation">
     <section class="session-dialog" role="alertdialog" aria-modal="true" aria-labelledby="expired-title" aria-describedby="expired-description">
-      <span class="dialog-icon" aria-hidden="true">◇</span><p class="dialog-overline">SESSION ENDED</p><h2 id="expired-title">Please sign in again</h2>
+      <span class="dialog-icon"><novara-icon name="lock" label="Session ended"/></span><p class="dialog-overline">SESSION ENDED</p><h2 id="expired-title">Please sign in again</h2>
       <p id="expired-description">Your session ended to protect your account. No unsent financial instruction was submitted.</p>
       <button #sessionAction class="dialog-primary" type="button" (click)="returnToSignIn()">Return to sign in</button>
     </section>

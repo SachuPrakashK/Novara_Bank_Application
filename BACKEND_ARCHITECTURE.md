@@ -11,6 +11,7 @@ The Milestone 2 backend is a Java 21 / Spring Boot 3.5 modular monolith in `back
 - `transfer`: authorization, deterministic locking, idempotency, posting, audit, and outbox orchestration.
 - `audit`: append-only security and business audit records.
 - `reconciliation`: detection-only consistency checks.
+- `beneficiary`: ownership-scoped beneficiary lifecycle, idempotent creation, duplicate prevention, verification/cooling states, and MFA-gated deactivation.
 - `shared`: correlation IDs and RFC 9457-style Problem Details.
 
 ## Consistency boundary
@@ -22,3 +23,6 @@ The advisory idempotency lock and uniqueness key are scoped to authenticated pri
 This order prevents double spending because concurrent debits from the same source serialize on the same account/balance row and re-read the committed projection before posting. Sorting both account UUIDs prevents opposing transfers from acquiring locks in opposite order.
 
 Spring Boot 3.5.16 was selected because it is a currently supported stable line with mature Spring Security and testing ecosystem support for Java 21.
+## Advanced payments
+
+The payment module orchestrates server-owned review intents and the existing internal-transfer/ledger services. It adds no parallel balance mutation path. Limit enforcement and posting share one PostgreSQL transaction; schedule workers use leased `SKIP LOCKED` claiming and stable occurrence idempotency.

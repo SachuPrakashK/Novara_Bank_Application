@@ -21,6 +21,7 @@ class PaymentsApiStub implements PaymentsApi {
   submitPayment(command: SubmitPaymentCommand): Observable<PaymentResult> { this.submitCalls += 1; this.lastCommand = command; return this.submission; }
   getPaymentStatus = () => { throw new Error('Not used'); };
   getPaymentStatusByIdempotencyKey = () => { throw new Error('Not used'); };
+  getPayments = () => of({items:[],page:0,size:20,total:0}); getPayment = () => of(quote); getLimits = () => { throw new Error('Not used'); }; lowerDailyLimit = () => { throw new Error('Not used'); }; getSchedules = () => of([]); createSchedule = () => { throw new Error('Not used'); }; cancelSchedule = () => { throw new Error('Not used'); };
 }
 
 describe('PaymentStateService', () => {
@@ -36,7 +37,7 @@ describe('PaymentStateService', () => {
   });
 
   it('maps an uncertain network response to UNKNOWN instead of FAILED', async () => {
-    const api: PaymentsApi = { getBeneficiaries: () => of([]), createBeneficiary: () => { throw new Error('Not used'); }, createQuote: () => of(quote), submitPayment: () => throwError(() => new NovaraApiError('NETWORK', 'Offline', 0, undefined, true)), getPaymentStatus: () => { throw new Error('Not used'); }, getPaymentStatusByIdempotencyKey: () => of({ outcome: 'COMPLETED', clientRequestId: 'request', submittedAt: new Date().toISOString(), message: 'Completed' }) };
+    const api: PaymentsApi = { getBeneficiaries: () => of([]), createBeneficiary: () => { throw new Error('Not used'); }, createQuote: () => of(quote), submitPayment: () => throwError(() => new NovaraApiError('NETWORK', 'Offline', 0, undefined, true)), getPaymentStatus: () => { throw new Error('Not used'); }, getPaymentStatusByIdempotencyKey: () => of({ outcome: 'COMPLETED', clientRequestId: 'request', submittedAt: new Date().toISOString(), message: 'Completed' }),getPayments:()=>of({items:[],page:0,size:20,total:0}),getPayment:()=>of(quote),getLimits:()=>{throw new Error('Not used')},lowerDailyLimit:()=>{throw new Error('Not used')},getSchedules:()=>of([]),createSchedule:()=>{throw new Error('Not used')},cancelSchedule:()=>{throw new Error('Not used')} };
     TestBed.configureTestingModule({ providers: [{ provide: PAYMENTS_API, useValue: api }] });
     const state = TestBed.inject(PaymentStateService);
     await state.prepare(draft);

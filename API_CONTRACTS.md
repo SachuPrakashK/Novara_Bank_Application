@@ -12,6 +12,17 @@ All routes require a valid OIDC access token except health probes. Identifiers a
 
 Account lookups always include the authenticated identity subject in the ownership query. Missing and unauthorized accounts deliberately produce the same response.
 
+## Beneficiaries
+
+- `GET /api/v1/beneficiaries?query=&status=&favorite=`
+- `GET /api/v1/beneficiaries/{beneficiaryId}`
+- `POST /api/v1/beneficiaries` requires a 16–100 character `Idempotency-Key`
+- `PATCH /api/v1/beneficiaries/{beneficiaryId}` permits display-name and nickname changes only
+- `PUT /api/v1/beneficiaries/{beneficiaryId}/favorite`
+- `DELETE /api/v1/beneficiaries/{beneficiaryId}` requires recent identity-provider MFA and performs soft deactivation
+
+Creation returns `PENDING_VERIFICATION`. Account identifiers are masked in responses. Verification and cooling are backend-owned; submission is never proof of verification.
+
 ## Internal transfers
 
 `POST /api/v1/transfers/internal` requires an unpredictable `Idempotency-Key` header of 16–100 URL-safe characters.
@@ -36,3 +47,13 @@ Retrying the same request/key returns the original resource. Reusing a key with 
 ## Operations
 
 `POST /api/v1/operations/reconciliation` requires `operations.reconcile` scope and never repairs records.
+## Advanced internal payments
+
+- `POST /api/v1/payments/intents` creates an expiring, server-authorized review.
+- `POST /api/v1/payments/{paymentId}/confirm` confirms with `Idempotency-Key`; financial details come from the locked intent.
+- `GET /api/v1/payments` provides ownership-scoped pagination/filtering; `GET /api/v1/payments/{paymentId}` returns detail and timeline.
+- `GET /api/v1/payments/{paymentId}/receipt` returns a no-store authoritative receipt representation only for completed payments.
+- `GET /api/v1/payment-limits` and `PATCH /api/v1/payment-limits/customer-preferences` expose usage and lowering-only customer controls.
+- `GET|POST /api/v1/payment-schedules`, `GET /api/v1/payment-schedules/{id}`, and `POST /api/v1/payment-schedules/{id}/cancel` manage durable schedules.
+
+Browser mutations require CSRF. UPI, IMPS, NEFT, and RTGS are rejected as unavailable.

@@ -2,6 +2,7 @@
 
 # Compiled output
 /dist
+/dist.zip
 /backend/target/
 .env
 .env.*
@@ -10,6 +11,9 @@
 /out-tsc
 /bazel-out
 /Novara.zip
+/.maven-home/
+/.maven-repo/
+/.tools/
 
 # Node
 /node_modules
@@ -43,6 +47,8 @@ yarn-error.log
 testem.log
 /typings
 __screenshots__/
+/test-results/
+/playwright-report/
 
 # System files
 .DS_Store

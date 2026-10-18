@@ -19,3 +19,8 @@ The local Keycloak realm disables self-registration/password grants, enables bru
 Step-up for high-risk transactions is an extension point, not claimed complete. Production policy must initiate fresh OIDC authorization with `acr`/`max_age`, verify `acr`, `amr`, and `auth_time` server-side, bind assurance to the transaction, and expire it quickly.
 
 Never log credentials, tokens, session IDs, CSRF values, full account numbers, or financial request bodies. Before deployment, use TLS and a secret manager, enable secure cookies, restrict proxy headers, rate-limit at the edge, separate database roles, export audits to tamper-evident storage, and run real-browser IdP tests.
+
+Beneficiary destinations are persisted only as a display mask plus a keyed HMAC fingerprint. Production must supply `NOVARA_BENEFICIARY_HASH_KEY` from a secret manager. Beneficiary creation is idempotent and pending verification; sensitive deactivation requires recent IdP MFA evidence. Destination changes require a new verified beneficiary rather than an in-place edit.
+## Phase C payment controls
+
+Payment confirmation ignores client financial details and uses the locked server intent. Beneficiary ownership, verified resolution, cooling period, account eligibility, limits, CSRF, and provider-backed step-up policy are enforced server-side. Receipt, history, and schedule access is issuer-and-subject ownership scoped.

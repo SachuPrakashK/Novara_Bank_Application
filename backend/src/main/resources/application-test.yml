@@ -12,3 +12,6 @@ novara:
   security:
     audience: novara-api
     csrf-cookie-secure: false
+  beneficiaries:
+    hash-key: test-only-beneficiary-hash-key-32-chars-minimum
+    cooling-period: 24h
