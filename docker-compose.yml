@@ -1,0 +1,48 @@
+services:
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.0.8
+    command: ["start-dev", "--import-realm"]
+    environment:
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_ADMIN:?Set KEYCLOAK_ADMIN}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:?Set KEYCLOAK_ADMIN_PASSWORD}
+      NOVARA_BFF_CLIENT_SECRET: ${NOVARA_OIDC_CLIENT_SECRET:?Set NOVARA_OIDC_CLIENT_SECRET}
+    ports:
+      - "127.0.0.1:8081:8080"
+    volumes:
+      - ./keycloak/novara-realm.json:/opt/keycloak/data/import/novara-realm.json:ro
+  postgres:
+    image: postgres:17.6-alpine
+    environment:
+      POSTGRES_DB: novara
+      POSTGRES_USER: novara_app
+      POSTGRES_PASSWORD: ${NOVARA_DB_PASSWORD:?Set NOVARA_DB_PASSWORD to a local-only value}
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U novara_app -d novara"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - novara-postgres:/var/lib/postgresql/data
+  backend:
+    build: ./backend
+    profiles: ["application"]
+    environment:
+      NOVARA_DB_URL: jdbc:postgresql://postgres:5432/novara
+      NOVARA_DB_USER: novara_app
+      NOVARA_DB_PASSWORD: ${NOVARA_DB_PASSWORD:?Set NOVARA_DB_PASSWORD}
+      NOVARA_OIDC_ISSUER: ${NOVARA_OIDC_ISSUER:?Set NOVARA_OIDC_ISSUER}
+      NOVARA_OIDC_AUDIENCE: ${NOVARA_OIDC_AUDIENCE:-novara-api}
+      NOVARA_OIDC_CLIENT_ID: ${NOVARA_OIDC_CLIENT_ID:-novara-bff}
+      NOVARA_OIDC_CLIENT_SECRET: ${NOVARA_OIDC_CLIENT_SECRET:?Set NOVARA_OIDC_CLIENT_SECRET}
+      NOVARA_ALLOWED_ORIGIN: ${NOVARA_ALLOWED_ORIGIN:-http://localhost:4200}
+    ports:
+      - "127.0.0.1:8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      keycloak:
+        condition: service_started
+volumes:
+  novara-postgres:
