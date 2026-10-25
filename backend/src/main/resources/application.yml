@@ -54,6 +54,14 @@ server:
     include-message: never
     include-stacktrace: never
 novara:
+  statements:
+    # Explicit sandbox defaults; production thresholds require product/security approval.
+    generation-limit: ${NOVARA_STATEMENT_GENERATION_LIMIT:10}
+    download-limit: ${NOVARA_DOCUMENT_DOWNLOAD_LIMIT:30}
+    rate-window: ${NOVARA_DOCUMENT_RATE_WINDOW:PT1M}
+  cards:
+    # Setting this to any non-sandbox value disables the test adapter and requires a real CardProcessor bean.
+    processor-mode: ${NOVARA_CARD_PROCESSOR_MODE:sandbox}
   security:
     audience: ${NOVARA_OIDC_AUDIENCE:novara-api}
     issuer: ${NOVARA_OIDC_ISSUER:http://localhost:8081/realms/novara}

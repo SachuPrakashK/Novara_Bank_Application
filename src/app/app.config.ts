@@ -20,6 +20,18 @@ import { BENEFICIARIES_API } from './core/beneficiaries/beneficiaries-api';
 import { HttpBeneficiariesApi } from './core/beneficiaries/http-beneficiaries.api';
 import { MockBeneficiariesApi } from './core/beneficiaries/mock-beneficiaries.api';
 import { routes } from './app.routes';
+import { CARDS_API } from './core/cards/cards-api';
+import { HttpCardsApi } from './core/cards/http-cards.api';
+import { MockCardsApi } from './core/cards/mock-cards.api';
+import { DEPOSITS_API } from './core/deposits/deposits-api';
+import { HttpDepositsApi } from './core/deposits/http-deposits.api';
+import { MockDepositsApi } from './core/deposits/mock-deposits.api';
+import { LOANS_API } from './core/loans/loans-api';
+import { HttpLoansApi } from './core/loans/http-loans.api';
+import { MockLoansApi } from './core/loans/mock-loans.api';
+import { STATEMENTS_API } from './core/statements/statements-api';
+import { HttpStatementsApi } from './core/statements/http-statements.api';
+import { MockStatementsApi } from './core/statements/mock-statements.api';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -39,6 +51,14 @@ export const appConfig: ApplicationConfig = {
     HttpPaymentsApi,
     HttpBeneficiariesApi,
     MockBeneficiariesApi,
+    HttpCardsApi,
+    MockCardsApi,
+    HttpDepositsApi,
+    MockDepositsApi,
+    HttpLoansApi,
+    MockLoansApi,
+    HttpStatementsApi,
+    MockStatementsApi,
     {
       provide: BANKING_API,
       useFactory: () =>
@@ -60,6 +80,25 @@ export const appConfig: ApplicationConfig = {
         inject(NOVARA_CONFIG).useMockApi
           ? inject(MockBeneficiariesApi)
           : inject(HttpBeneficiariesApi),
+    },
+    {
+      provide: CARDS_API,
+      useFactory: () =>
+        inject(NOVARA_CONFIG).useMockApi ? inject(MockCardsApi) : inject(HttpCardsApi),
+    },
+    {
+      provide: DEPOSITS_API,
+      useFactory: () =>
+        inject(NOVARA_CONFIG).useMockApi ? inject(MockDepositsApi) : inject(HttpDepositsApi),
+    },
+    {
+      provide: LOANS_API,
+      useFactory: () =>
+        inject(NOVARA_CONFIG).useMockApi ? inject(MockLoansApi) : inject(HttpLoansApi),
+    },
+    {
+      provide: STATEMENTS_API,
+      useFactory: () => inject(NOVARA_CONFIG).useMockApi ? inject(MockStatementsApi) : inject(HttpStatementsApi),
     },
     provideAppInitializer(() => {
       const config = inject(NOVARA_CONFIG);

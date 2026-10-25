@@ -2,6 +2,7 @@ package com.novara.banking.identity;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 import com.novara.banking.audit.AuditService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -52,6 +53,24 @@ public class SecurityCenterController {
             .query((rs, row) -> new EventView(rs.getString(1), rs.getString(2), rs.getTimestamp(3).toInstant())).list();
     }
 
+    @GetMapping("/summary")
+    SecuritySummary summary(Authentication authentication, HttpServletRequest request) {
+        identities.subject(authentication);
+        Object principal = authentication.getPrincipal();
+        Map<String, Object> claims = principal instanceof org.springframework.security.oauth2.core.oidc.user.OidcUser oidc ? oidc.getClaims()
+            : principal instanceof org.springframework.security.oauth2.jwt.Jwt jwt ? jwt.getClaims() : Map.of();
+        Object amr = claims.get("amr");
+        String mfa = amr instanceof java.util.Collection<?> methods && methods.stream().map(Object::toString).anyMatch(value -> value.equalsIgnoreCase("mfa") || value.equalsIgnoreCase("otp"))
+            ? "CONFIRMED_BY_IDENTITY_PROVIDER" : "NOT_REPORTED_BY_IDENTITY_PROVIDER";
+        Instant lastLogin = jdbc.sql("SELECT occurred_at FROM audit_events WHERE actor_subject=:subject AND action='OIDC_LOGIN' AND outcome='SUCCESS' ORDER BY occurred_at DESC LIMIT 1")
+            .param("subject", identities.subject(authentication)).query((rs,row)->rs.getTimestamp(1).toInstant()).optional().orElse(null);
+        Session session = (Session) sessions.findById(request.getSession().getId());
+        return new SecuritySummary("AUTHENTICATED", mfa, lastLogin, session == null ? null : session.getCreationTime(),
+            session == null ? null : session.getLastAccessedTime().plus(session.getMaxInactiveInterval()), false,
+            "Password and MFA settings are managed by the configured identity provider.");
+    }
+
     record SessionView(String id, Instant createdAt, Instant lastAccessedAt, Instant expiresAt, boolean current) {}
     record EventView(String action, String outcome, Instant occurredAt) {}
+    record SecuritySummary(String authenticationStatus,String mfaStatus,Instant lastSuccessfulLogin,Instant sessionCreatedAt,Instant sessionExpiresAt,boolean identityManagementLinkAvailable,String identityManagementMessage) {}
 }

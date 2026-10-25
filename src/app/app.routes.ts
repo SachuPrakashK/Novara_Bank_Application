@@ -24,7 +24,16 @@ export const routes: Routes = [
       { path: 'payments/:paymentId', loadComponent: () => import('./features/payments/payment-detail.page').then((m) => m.PaymentDetailPage), title: 'Payment details | Novara Bank' },
       { path: 'beneficiaries', loadComponent: () => import('./features/beneficiaries/beneficiaries.page').then((m) => m.BeneficiariesPage), title: 'Beneficiaries | Novara Bank' },
       { path: 'security', loadComponent: () => import('./features/security/security-center.page').then((m) => m.SecurityCenterPage), title: 'Security center | Novara Bank' },
-      ...['cards', 'deposits', 'loans', 'investments', 'statements', 'notifications', 'profile', 'support'].map((path) => ({
+      { path: 'profile', loadComponent: () => import('./features/self-service/profile.page').then((m) => m.ProfilePage), title: 'Profile | Novara Bank' },
+      { path: 'account-services', loadComponent: () => import('./features/self-service/account-services.page').then((m) => m.AccountServicesPage), title: 'Account services | Novara Bank' },
+      { path: 'notifications', loadComponent: () => import('./features/self-service/notifications.page').then((m) => m.NotificationsPage), title: 'Notifications | Novara Bank' },
+      { path: 'preferences', loadComponent: () => import('./features/self-service/preferences.page').then((m) => m.PreferencesPage), title: 'Preferences | Novara Bank' },
+      { path: 'cards', loadComponent: () => import('./features/cards/cards.page').then((m) => m.CardsPage), title: 'Cards | Novara Bank' },
+      { path: 'cards/:cardId', loadComponent: () => import('./features/cards/card-details.page').then((m) => m.CardDetailsPage), title: 'Card details | Novara Bank' },
+      { path: 'deposits', loadComponent: () => import('./features/deposits/deposits.page').then((m) => m.DepositsPage), title: 'Deposits | Novara Bank' },
+      { path: 'loans', loadComponent: () => import('./features/loans/loans.page').then((m) => m.LoansPage), title: 'Loans | Novara Bank' },
+      { path: 'statements', loadComponent: () => import('./features/statements/statements.page').then((m) => m.StatementsPage), title: 'Statements & Receipts | Novara Bank' },
+      ...['investments', 'support'].map((path) => ({
         path, loadComponent: () => import('./features/placeholder/placeholder.page').then((m) => m.PlaceholderPage), data: { label: path[0].toUpperCase() + path.slice(1) },
       })),
       { path: '', pathMatch: 'full', redirectTo: 'dashboard' },

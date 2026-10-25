@@ -4,6 +4,9 @@
 /dist
 /dist.zip
 /backend/target/
+/backend/backend-local.*.log
+/backend/hs_err_pid*.log
+/backend/replay_pid*.log
 .env
 .env.*
 !.env.example
