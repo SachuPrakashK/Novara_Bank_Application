@@ -1,0 +1,3 @@
+import { InjectionToken } from '@angular/core';import type { Observable } from 'rxjs';import type { DepositAccount,DepositInstruction,DepositProduct,DepositReview,DepositType,ScheduleItem } from './deposit.models';
+export interface DepositsApi{products(type?:DepositType):Observable<readonly DepositProduct[]>;list():Observable<readonly DepositAccount[]>;get(id:string):Observable<DepositAccount>;review(type:DepositType,value:DepositInstruction):Observable<DepositReview>;confirm(type:DepositType,value:DepositInstruction):Observable<DepositAccount>;schedule(id:string):Observable<readonly ScheduleItem[]>}
+export const DEPOSITS_API=new InjectionToken<DepositsApi>('DEPOSITS_API');

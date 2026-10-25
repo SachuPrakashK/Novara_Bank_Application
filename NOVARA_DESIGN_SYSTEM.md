@@ -1,5 +1,9 @@
 # Novara Bank product design language
 
+## Phase E application
+
+The deposit workspace uses the existing Poppins font, navy/gold semantic palette, SVG icon component, surface/border/focus tokens, shell/sidebar, responsive breakpoints, reduced-motion behavior, accessible labels, alert regions, and modal semantics. Estimated returns are labelled separately from contributed/realized values, and all production-unsupported products are visibly identified as sandbox terms.
+
 This standard applies to Payments and every future Cards, Deposits, Loans, Statements, and Administration module.
 
 ## Visual foundation

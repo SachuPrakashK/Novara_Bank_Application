@@ -1,0 +1,3 @@
+import { InjectionToken } from '@angular/core';import type { Observable } from 'rxjs';import type { BankCard,CardActivityPage,CardActivityQuery,CardControls } from './card.models';
+export interface CardsApi{list():Observable<readonly BankCard[]>;get(id:string):Observable<BankCard>;activity(id:string,query:CardActivityQuery):Observable<CardActivityPage>;freeze(id:string):Observable<BankCard>;unfreeze(id:string):Observable<BankCard>;updateControls(id:string,value:CardControls):Observable<BankCard>;requestService(id:string,type:string,notes:string):Observable<unknown>}
+export const CARDS_API=new InjectionToken<CardsApi>('CARDS_API');

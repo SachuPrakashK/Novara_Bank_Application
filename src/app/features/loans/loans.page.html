@@ -1,0 +1,55 @@
+<header class="hero">
+  <div><p class="eyebrow">BORROW WITH CLARITY</p><h1>Plan first. Apply with confidence.</h1><p>Compare fictional sandbox products, create an authoritative EMI quote, and track your application securely.</p></div>
+  <span class="hero-icon"><novara-icon name="loan" label="Loans" /></span>
+</header>
+@if (error()) { <p class="alert" role="alert">{{ error() }}</p> }
+<section class="metrics" aria-label="Loan summary">
+  <article><span>Submitted applications</span><strong>{{ submitted() }}</strong></article>
+  <article><span>Active loans</span><strong>0</strong><small>Booking unavailable</small></article>
+  <article><span>Outstanding balance</span><strong><novara-money [minor]="0" /></strong><small>No loan ledger postings</small></article>
+</section>
+@if (loading()) {
+  <section class="panel skeleton" aria-live="polite">Loading secure loan products…</section>
+} @else {
+  <section>
+    <div class="section-heading"><div><p class="eyebrow">FICTIONAL SANDBOX PRODUCTS</p><h2>Explore transparent terms</h2></div><span>Not a real-world offer or credit decision.</span></div>
+    <div class="products">
+      @for (product of products(); track product.id) {
+        <button class="product" [class.selected]="form.controls.productId.value === product.id" (click)="selectProduct(product)">
+          <span class="product-icon"><novara-icon [name]="product.category === 'EDUCATION' ? 'building' : 'loan'" /></span>
+          <small>{{ product.code }}</small><h3>{{ product.name }}</h3>
+          <strong>{{ product.annualRateBasisPoints / 100 | number: '1.2-2' }}% <em>p.a.</em></strong>
+          <p>{{ product.minimumTenureMonths }}–{{ product.maximumTenureMonths }} months · Reducing balance EMI</p>
+          <span><novara-money [minor]="product.minimumPrincipalMinor" /> to <novara-money [minor]="product.maximumPrincipalMinor" /></span>
+        </button>
+      }
+    </div>
+  </section>
+  <section class="panel">
+    <div class="section-heading"><div><p class="eyebrow">AUTHORITATIVE EMI ENGINE</p><h2>Build your repayment illustration</h2></div><span>Step 1 of 2 · Quote</span></div>
+    <form [formGroup]="form" (ngSubmit)="calculate()">
+      <label>Loan amount (INR)<input formControlName="amount" inputmode="decimal" placeholder="100,000.00" /></label>
+      <label>Tenure in months<input type="number" formControlName="tenureMonths" min="1" /></label>
+      <label>Purpose<select formControlName="purposeCategory"><option value="PERSONAL">Personal</option><option value="EDUCATION">Education</option><option value="HOME">Home</option><option value="OTHER">Other</option></select></label>
+      <div class="form-note"><novara-icon name="shield" /><span>The server fixes the rate, rounds each installment in minor currency units, and reconciles principal in the final installment.</span></div>
+      <button class="primary" type="submit" [disabled]="submitting()">{{ submitting() ? 'Calculating…' : 'Calculate secure quote' }}</button>
+    </form>
+  </section>
+  <section>
+    <div class="section-heading"><div><p class="eyebrow">APPLICATION TRACKER</p><h2>Your applications</h2></div></div>
+    @if (applications().length) {
+      <div class="application-list">@for (application of applications(); track application.id) {<article><div><span class="status">{{ application.status }}</span><h3>{{ application.productName }}</h3><small>{{ application.reference }} · Submitted {{ application.submittedAt.slice(0, 10) }}</small></div><div><strong><novara-money [minor]="application.requestedPrincipalMinor" /></strong><span>{{ application.tenureMonths }} months · EMI <novara-money [minor]="application.illustrativeEmiMinor" /></span></div><p>{{ application.decisionMessage }}</p></article>}</div>
+    } @else { <div class="empty"><novara-icon name="loan" /><h3>No loan applications yet</h3><p>Calculate a sandbox quote to begin.</p></div> }
+    <aside class="unavailable"><novara-icon name="lock" /><div><strong>Financial loan operations are policy-blocked</strong><p>Approval, booking, disbursement, repayments, prepayments, foreclosure, delinquency and loan ledger postings remain disabled until approved accounting and servicing policies are supplied.</p></div></aside>
+  </section>
+}
+@if (quote(); as result) {
+  <div class="modal-backdrop"><section class="modal" role="dialog" aria-modal="true" aria-labelledby="quote-title">
+    <p class="eyebrow">STEP 2 OF 2 · REVIEW</p><h2 id="quote-title">Review your sandbox quote</h2>
+    <dl><div><dt>Product</dt><dd>{{ result.productName }}</dd></div><div><dt>Principal</dt><dd><novara-money [minor]="result.principalMinor" /></dd></div><div><dt>Illustrative EMI</dt><dd><novara-money [minor]="result.emiMinor" /></dd></div><div><dt>Total interest</dt><dd><novara-money [minor]="result.totalInterestMinor" /></dd></div><div><dt>Total repayment</dt><dd><novara-money [minor]="result.totalRepaymentMinor" /></dd></div><div><dt>Rate snapshot</dt><dd>{{ result.annualRateBasisPoints / 100 | number: '1.2-2' }}% p.a.</dd></div><div><dt>First installment</dt><dd>{{ result.firstInstallmentDate }}</dd></div><div><dt>Maturity</dt><dd>{{ result.maturityDate }}</dd></div></dl>
+    @if (result.schedule.length) { <details><summary>Preview repayment schedule</summary><div class="schedule"><b>#</b><b>Due</b><b>Principal</b><b>Interest</b>@for (item of result.schedule.slice(0, 6); track item.sequence) {<span>{{ item.sequence }}</span><span>{{ item.dueDate }}</span><span><novara-money [minor]="item.principalMinor" /></span><span><novara-money [minor]="item.interestMinor" /></span>}</div></details> }
+    <p class="disclosure">{{ result.assumptions }}</p>
+    <label class="declaration"><input type="checkbox" [formControl]="form.controls.declaration" /> I understand this is a fictional sandbox application and does not create a loan, approval, or disbursement.</label>
+    <div class="actions"><button class="secondary" (click)="quote.set(null)">Back</button><button class="primary" (click)="submitApplication()" [disabled]="submitting()">{{ submitting() ? 'Submitting…' : 'Submit with recent MFA' }}</button></div>
+  </section></div>
+}

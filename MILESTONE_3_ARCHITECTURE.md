@@ -1,5 +1,9 @@
 # Milestone 3 architecture
 
+## Phase E deposit extension
+
+Phase E adds the `com.novara.banking.deposit` bounded module without introducing another service or ledger. Versioned products feed server-side reviews; confirmed contracts snapshot accepted terms; FD funding and RD installments reuse the existing immutable double-entry journal. The Angular deposit route is standalone and lazy-loaded inside the shared authenticated shell. See `MILESTONE_3_PHASE_E_ARCHITECTURE.md` for boundaries and blocked policy-dependent workflows.
+
 Status: Phases A–C implemented and verified at the automated-test level. Phases D–I have not started. Production release remains blocked by inherited authentication and deployment evidence gaps.
 
 Phase C adds server-authorized payment intents, verified opaque beneficiary resolution, concurrency-safe limits, durable schedules and occurrences, ownership-scoped history and receipts, and a premium Angular payment workspace. See `MILESTONE_3_PHASE_C_ARCHITECTURE.md` for detailed boundaries.
@@ -31,4 +35,20 @@ An `ACTIVE` beneficiary with a future `availableFrom` remains in its cooling per
 ## Integration limits
 
 The verification completion method is an internal service boundary awaiting an approved verification provider or operations workflow. UPI, IMPS, NEFT, and RTGS are labels/integration boundaries only and are not live rails. No beneficiary operation posts a journal or changes an account balance.
+
+# Phase F status
+
+Phase F adds versioned sandbox loan products, authoritative EMI quotes with durable illustrative schedules, and owned/idempotent application submission. Loan booking and every financial servicing operation remain policy-blocked; see `MILESTONE_3_PHASE_F_ARCHITECTURE.md` and `LOAN_LEDGER_POSTINGS.md`.
+
+# Phase G status
+
+Phase G adds authoritative posted-ledger statements, deterministic balances, server-side transaction filtering/pagination, versioned statement generation metadata, secure PDF/CSV downloads, and posted-journal receipts. Unsupported or unposted financial events never receive receipts. See `MILESTONE_3_PHASE_G_ARCHITECTURE.md` and `STATEMENT_BALANCE_RULES.md`. Phase H has not started.
+
+# Phase G.1 status
+
+Phase G.1 hardens reproducibility with a repeatable-read ledger sequence cutoff, checksum enforcement, PostgreSQL-shared document rate limits, safer CSV/PDF behavior, receipt details, and responsive browser coverage. Production blockers remain documented in `MILESTONE_3_PHASE_G_1_REMAINING_RISKS.md`. Phase H has not started.
+
+# Reversal semantics clarification
+
+Posted journals are immutable. A reversal creates a separate POSTED journal whose `reversal_of_journal_id` references the original journal. The original journal remains POSTED; it is never mutated to REVERSED. Any earlier documentation describing an in-place status change is superseded by this rule.
 

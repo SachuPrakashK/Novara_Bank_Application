@@ -10,6 +10,19 @@ import com.novara.banking.transfer.InternalTransferRequest;
 import com.novara.banking.transfer.InternalTransferService;
 import com.novara.banking.payment.*;
 import com.novara.banking.identity.CurrentIdentity.FederatedIdentity;
+import com.novara.banking.card.CardCommands;
+import com.novara.banking.card.CardService;
+import com.novara.banking.deposit.DepositInstallmentService;
+import com.novara.banking.deposit.DepositModels.ReviewRequest;
+import com.novara.banking.deposit.DepositService;
+import com.novara.banking.loan.LoanModels.ApplicationRequest;
+import com.novara.banking.loan.LoanModels.QuoteRequest;
+import com.novara.banking.loan.LoanService;
+import com.novara.banking.statement.StatementExportService;
+import com.novara.banking.statement.StatementService;
+import com.novara.banking.profile.ProfileService;
+import com.novara.banking.servicerequest.ServiceRequestService;
+import com.novara.banking.notification.NotificationService;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -50,9 +63,9 @@ import org.springframework.http.MediaType;
 @AutoConfigureMockMvc
 class BankingIntegrationTest {
     @Container static final PostgreSQLContainer<?> POSTGRES=new PostgreSQLContainer<>("postgres:17-alpine").withDatabaseName("novara_test").withUsername("novara").withPassword("test-only");
-    @DynamicPropertySource static void database(DynamicPropertyRegistry registry){registry.add("spring.datasource.url",POSTGRES::getJdbcUrl);registry.add("spring.datasource.username",POSTGRES::getUsername);registry.add("spring.datasource.password",POSTGRES::getPassword);}
+    @DynamicPropertySource static void database(DynamicPropertyRegistry registry){registry.add("spring.datasource.url",POSTGRES::getJdbcUrl);registry.add("spring.datasource.username",POSTGRES::getUsername);registry.add("spring.datasource.password",POSTGRES::getPassword);registry.add("novara.deposits.installment-worker-initial-delay",()->"PT24H");registry.add("novara.statements.generation-limit",()->"2");}
     @MockBean JwtDecoder jwtDecoder;
-    @Autowired JdbcClient jdbc; @Autowired LedgerPostingService ledger; @Autowired InternalTransferService transfers; @Autowired ReconciliationService reconciliation; @Autowired AccountHoldService holds; @Autowired BeneficiaryService beneficiaries; @Autowired PaymentService payments; @Autowired PaymentScheduleService schedules; @Autowired MockMvc mockMvc;
+    @Autowired JdbcClient jdbc; @Autowired LedgerPostingService ledger; @Autowired InternalTransferService transfers; @Autowired ReconciliationService reconciliation; @Autowired AccountHoldService holds; @Autowired BeneficiaryService beneficiaries; @Autowired PaymentService payments; @Autowired PaymentScheduleService schedules; @Autowired CardService cards; @Autowired DepositService deposits; @Autowired DepositInstallmentService installments; @Autowired LoanService loans; @Autowired StatementService statements; @Autowired StatementExportService statementExports; @Autowired ProfileService profiles; @Autowired ServiceRequestService serviceRequests; @Autowired NotificationService notifications; @Autowired MockMvc mockMvc;
     UUID sourceId,destinationId; long sourceLedger,destinationLedger;
 
     @BeforeEach void seed(){
@@ -173,6 +186,21 @@ class BankingIntegrationTest {
     @Test void sensitiveEndpointsRejectMissingAuthenticationAndOperationsScope() throws Exception {
         mockMvc.perform(get("/api/v1/accounts")).andExpect(status().isUnauthorized());
         mockMvc.perform(post("/api/v1/operations/reconciliation").with(jwt().jwt(token->token.subject("oidc-customer-1")))).andExpect(status().isForbidden());
+    }
+    @Test void cardOwnershipStatusAndIdempotencyAreEnforced(){
+        UUID card=seedCard("ACTIVE");var identity=new FederatedIdentity("http://localhost:8081/realms/novara","oidc-customer-1");
+        var frozen=cards.status(identity,card,"FROZEN","card-freeze-key-0001","corr-card");
+        assertThat(frozen.status()).isEqualTo("FROZEN");
+        assertThat(cards.status(identity,card,"FROZEN","card-freeze-key-0001","corr-card").status()).isEqualTo("FROZEN");
+        assertThat(jdbc.sql("SELECT count(*) FROM card_status_events").query(Long.class).single()).isEqualTo(1);
+        assertThatThrownBy(()->cards.owned(new FederatedIdentity("http://localhost:8081/realms/novara","other-customer"),card)).isInstanceOf(DomainException.class);
+    }
+    @Test void cardControlsRejectInvalidLimitsAndPersistAcknowledgedChanges(){
+        UUID card=seedCard("ACTIVE");var identity=new FederatedIdentity("http://localhost:8081/realms/novara","oidc-customer-1");
+        assertThatThrownBy(()->cards.controls(identity,card,new CardCommands.Controls(true,true,true,true,false,500,200,200,100,300),"card-control-key-001","corr")).isInstanceOf(DomainException.class);
+        var updated=cards.controls(identity,card,new CardCommands.Controls(true,false,true,false,false,500,200,700,100,1000),"card-control-key-002","corr");
+        assertThat(updated.controls().onlineEnabled()).isFalse();assertThat(updated.controls().dailyLimitMinor()).isEqualTo(1000);
+        assertThat(jdbc.sql("SELECT status FROM card_control_requests WHERE idempotency_key='card-control-key-002'").query(String.class).single()).isEqualTo("CONFIRMED");
     }
     @Test void accountEndpointEnforcesOwnershipWithoutRevealingExistence() throws Exception {
         mockMvc.perform(get("/api/v1/accounts/"+UUID.randomUUID()).with(jwt().jwt(token->token.subject("oidc-customer-1")))).andExpect(status().isNotFound());
@@ -303,6 +331,194 @@ class BankingIntegrationTest {
         assertThatThrownBy(()->schedules.requireOwned(new FederatedIdentity(issuer(),"another-customer"),schedule.id())).isInstanceOf(DomainException.class);
     }
 
+    @Test void fixedDepositConfirmationIsAtomicBalancedOwnedAndIdempotent() {
+        var request=depositRequest("SANDBOX_FD_GOLD",100_000,3);
+        var review=deposits.review(identity(),request,"FIXED");
+        assertThat(review.annualRateBasisPoints()).isEqualTo(650);
+        var opened=deposits.confirm(identity(),request,"FIXED","fixed-open-key-0001","corr");
+        var replay=deposits.confirm(identity(),request,"FIXED","fixed-open-key-0001","corr");
+        assertThat(replay.id()).isEqualTo(opened.id());
+        assertThat(balance(sourceLedger)).isZero();
+        assertThat(jdbc.sql("SELECT count(*) FROM deposit_accounts").query(Long.class).single()).isEqualTo(1);
+        assertThat(jdbc.sql("SELECT count(*) FROM journals").query(Long.class).single()).isEqualTo(1);
+        assertThat(jdbc.sql("SELECT sum(amount_minor) FILTER(WHERE direction='DEBIT')=sum(amount_minor) FILTER(WHERE direction='CREDIT') FROM journal_lines").query(Boolean.class).single()).isTrue();
+        assertThatThrownBy(()->deposits.requireOwned(new FederatedIdentity(issuer(),"another-customer"),opened.id())).isInstanceOf(DomainException.class);
+    }
+
+    @Test void fixedDepositFailureRollsBackContractLedgerAndDebit() {
+        var request=depositRequest("SANDBOX_FD_GOLD",100_000,3);
+        jdbc.sql("CREATE FUNCTION fail_deposit_reference() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN RAISE EXCEPTION 'simulated deposit failure'; END $$").update();
+        jdbc.sql("CREATE TRIGGER test_fail_deposit_reference BEFORE INSERT ON deposit_posting_references FOR EACH ROW EXECUTE FUNCTION fail_deposit_reference()").update();
+        assertThatThrownBy(()->deposits.confirm(identity(),request,"FIXED","fixed-rollback-key-01","corr")).isInstanceOf(RuntimeException.class);
+        jdbc.sql("DROP TRIGGER test_fail_deposit_reference ON deposit_posting_references").update();jdbc.sql("DROP FUNCTION fail_deposit_reference()").update();
+        assertThat(balance(sourceLedger)).isEqualTo(100_000);
+        assertThat(jdbc.sql("SELECT count(*) FROM deposit_accounts").query(Long.class).single()).isZero();
+        assertThat(jdbc.sql("SELECT count(*) FROM journals").query(Long.class).single()).isZero();
+    }
+
+    @Test void concurrentFixedConfirmationPostsExactlyOnce() throws Exception {
+        var request=depositRequest("SANDBOX_FD_GOLD",100_000,3);String key="fixed-concurrent-key-01";
+        try(var executor=Executors.newVirtualThreadPerTaskExecutor()){
+            var start=new CountDownLatch(1);
+            var one=executor.submit(()->{start.await();return deposits.confirm(identity(),request,"FIXED",key,"corr");});
+            var two=executor.submit(()->{start.await();return deposits.confirm(identity(),request,"FIXED",key,"corr");});
+            start.countDown();assertThat(two.get(10,TimeUnit.SECONDS).id()).isEqualTo(one.get(10,TimeUnit.SECONDS).id());
+        }
+        assertThat(jdbc.sql("SELECT count(*) FROM journals").query(Long.class).single()).isEqualTo(1);
+        assertThat(balance(sourceLedger)).isZero();
+    }
+
+    @Test void recurringScheduleAndConcurrentWorkersPostOccurrenceOnce() throws Exception {
+        var request=depositRequest("SANDBOX_RD_GROWTH",50_000,6);
+        var opened=deposits.confirm(identity(),request,"RECURRING","recurring-open-key-01","corr");
+        assertThat(deposits.schedule(identity(),opened.id())).extracting("sequence").containsExactly(1,2,3,4,5,6);
+        assertThat(jdbc.sql("SELECT count(DISTINCT idempotency_key)=count(*) FROM deposit_installment_occurrences").query(Boolean.class).single()).isTrue();
+        jdbc.sql("UPDATE deposit_installment_occurrences SET scheduled_date=CURRENT_DATE WHERE deposit_account_id=(SELECT id FROM deposit_accounts WHERE public_id=:id) AND sequence_number=2").param("id",opened.id()).update();
+        try(var executor=Executors.newVirtualThreadPerTaskExecutor()){
+            var start=new CountDownLatch(1);var one=executor.submit(()->{start.await();return installments.processOne();});var two=executor.submit(()->{start.await();return installments.processOne();});start.countDown();one.get(10,TimeUnit.SECONDS);two.get(10,TimeUnit.SECONDS);
+        }
+        assertThat(jdbc.sql("SELECT count(*) FROM deposit_installment_occurrences WHERE status='COMPLETED'").query(Long.class).single()).isEqualTo(2);
+        assertThat(jdbc.sql("SELECT count(*) FROM deposit_installment_occurrences WHERE sequence_number=2 AND journal_id IS NOT NULL").query(Long.class).single()).isEqualTo(1);
+        assertThat(jdbc.sql("SELECT count(*) FROM journals").query(Long.class).single()).isEqualTo(2);
+    }
+
+    @Test void recurringInsufficientFundsNeverCompletesWithoutJournal() {
+        var request=depositRequest("SANDBOX_RD_GROWTH",50_000,6);var opened=deposits.confirm(identity(),request,"RECURRING","recurring-funds-key-01","corr");
+        holds.place("oidc-customer-1",sourceId,50_000,"INR","CARD_AUTHORIZATION","rd-funds-hold",Instant.now().plusSeconds(3600));
+        jdbc.sql("UPDATE deposit_installment_occurrences SET scheduled_date=CURRENT_DATE-1 WHERE deposit_account_id=(SELECT id FROM deposit_accounts WHERE public_id=:id) AND sequence_number=2").param("id",opened.id()).update();
+        assertThat(installments.processOne()).isTrue();
+        assertThat(jdbc.sql("SELECT status FROM deposit_installment_occurrences WHERE sequence_number=2").query(String.class).single()).isEqualTo("SCHEDULED");
+        assertThat(jdbc.sql("SELECT journal_id IS NULL FROM deposit_installment_occurrences WHERE sequence_number=2").query(Boolean.class).single()).isTrue();
+        assertThat(jdbc.sql("SELECT count(*) FROM journals").query(Long.class).single()).isEqualTo(1);
+    }
+
+    @Test void loanQuotePersistsExactScheduleWithoutLedgerPosting() {
+        var product = loans.products().stream().filter(p -> p.code().equals("SANDBOX_PERSONAL")).findFirst().orElseThrow();
+        var quote = loans.quote(identity(), new QuoteRequest(product.id(), 500_000, 6));
+        assertThat(quote.schedule()).hasSize(6);
+        assertThat(quote.schedule().getLast().closingPrincipalMinor()).isZero();
+        assertThat(quote.schedule().stream().mapToLong(item -> item.principalMinor()).sum()).isEqualTo(500_000);
+        assertThat(loans.quoteSchedule(identity(), quote.id())).isEqualTo(quote.schedule());
+        assertThat(jdbc.sql("SELECT count(*) FROM journals").query(Long.class).single()).isZero();
+    }
+
+    @Test void loanApplicationIsOwnedIdempotentAndNonPosting() {
+        var product = loans.products().getFirst();
+        var quote = loans.quote(identity(), new QuoteRequest(product.id(), product.minimumPrincipalMinor(), product.minimumTenureMonths()));
+        var request = new ApplicationRequest(quote.id(), "PERSONAL", true);
+        var application = loans.apply(identity(), request, "loan-application-key-0001", "corr-loan");
+        assertThat(loans.apply(identity(), request, "loan-application-key-0001", "corr-loan").id()).isEqualTo(application.id());
+        assertThat(application.status()).isEqualTo("SUBMITTED");
+        assertThat(application.bookingAvailable()).isFalse();
+        assertThatThrownBy(() -> loans.requireApplication(new FederatedIdentity(issuer(), "another-customer"), application.id())).isInstanceOf(DomainException.class);
+        assertThat(jdbc.sql("SELECT count(*) FROM loan_accounts").query(Long.class).single()).isZero();
+        assertThat(jdbc.sql("SELECT count(*) FROM journals").query(Long.class).single()).isZero();
+    }
+
+    @Test void loanApplicationEndpointRequiresCsrfAndRecentProviderMfa() throws Exception {
+        var product = loans.products().getFirst();
+        var quote = loans.quote(identity(), new QuoteRequest(product.id(), product.minimumPrincipalMinor(), product.minimumTenureMonths()));
+        String body = "{\"quoteId\":\"" + quote.id() + "\",\"purposeCategory\":\"PERSONAL\",\"customerDeclaration\":true}";
+        mockMvc.perform(post("/api/v1/loans/applications").with(customerLogin()).header("Idempotency-Key", "loan-http-key-000001").contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/v1/loans/applications").with(customerLogin()).with(csrf()).header("Idempotency-Key", "loan-http-key-000002").contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isForbidden());
+    }
+
+    @Test void statementBalancesDirectionsPaginationAndExportsReconcile() {
+        var transfer=transfers.execute("oidc-customer-1","statement-transfer-key-01",request(10_000),"corr");
+        var today=java.time.LocalDate.now(java.time.ZoneId.of("Asia/Kolkata"));
+        var page=statements.transactions(identity(),sourceId,today,today,"","","","newest",0,1);
+        assertThat(page.summary().openingBalanceMinor()).isEqualTo(100_000);
+        assertThat(page.summary().totalDebitMinor()).isEqualTo(10_000);
+        assertThat(page.summary().totalCreditMinor()).isZero();
+        assertThat(page.summary().closingBalanceMinor()).isEqualTo(90_000);
+        assertThat(page.items()).singleElement().satisfies(e->{assertThat(e.debitMinor()).isEqualTo(10_000);assertThat(e.runningBalanceMinor()).isEqualTo(90_000);});
+        var generated=statements.generate(identity(),sourceId,today,today,"statement-generate-key-01","corr");
+        assertThat(statements.generate(identity(),sourceId,today,today,"statement-generate-key-01","corr").id()).isEqualTo(generated.id());
+        assertThat(jdbc.sql("SELECT count(*) FROM statement_generations").query(Long.class).single()).isEqualTo(1);
+        var snapshot=statements.snapshot(identity(),generated.id());
+        assertThat(statementExports.statementPdf(snapshot)).startsWith((byte)'%',(byte)'P',(byte)'D',(byte)'F');
+        assertThat(new String(statementExports.csv(snapshot),java.nio.charset.StandardCharsets.UTF_8)).contains("Transaction Reference",transfer.reference());
+        assertThat(statements.receipt(identity(),page.items().getFirst().id()).status()).isEqualTo("COMPLETED");
+    }
+
+    @Test void statementAndReceiptOwnershipAreNonEnumerating() {
+        transfers.execute("oidc-customer-1","statement-owner-key-001",request(500),"corr");
+        var today=java.time.LocalDate.now(java.time.ZoneId.of("Asia/Kolkata"));
+        var generated=statements.generate(identity(),sourceId,today,today,"statement-owner-generate-01","corr");
+        var other=new FederatedIdentity(issuer(),"another-customer");
+        assertThatThrownBy(()->statements.snapshot(other,generated.id())).isInstanceOf(DomainException.class);
+        assertThatThrownBy(()->statements.transactions(other,sourceId,today,today,null,null,null,"newest",0,25)).isInstanceOf(DomainException.class);
+    }
+
+    @Test void statementGenerationRequiresCsrf() throws Exception {
+        var today=java.time.LocalDate.now(java.time.ZoneId.of("Asia/Kolkata"));
+        String body="{\"accountId\":\""+sourceId+"\",\"from\":\""+today+"\",\"to\":\""+today+"\"}";
+        mockMvc.perform(post("/api/v1/statements/generations").with(customerLogin()).header("Idempotency-Key","statement-http-key-0001").contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/v1/statements/generations").with(customerLogin()).with(csrf()).header("Idempotency-Key","statement-http-key-0002").contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isCreated());
+        mockMvc.perform(post("/api/v1/statements/generations").with(customerLogin()).with(csrf()).header("Idempotency-Key","statement-http-key-0003").contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isCreated());
+        mockMvc.perform(post("/api/v1/statements/generations").with(customerLogin()).with(csrf()).header("Idempotency-Key","statement-http-key-0004").contentType(MediaType.APPLICATION_JSON).content(body)).andExpect(status().isTooManyRequests()).andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header().exists("Retry-After"));
+    }
+
+    @Test void historicalStatementCutoffSurvivesLaterReversalAndChecksumValidation() {
+        var transfer=transfers.execute("oidc-customer-1","historical-cutoff-key-01",request(10_000),"corr");
+        var today=java.time.LocalDate.now(java.time.ZoneId.of("Asia/Kolkata"));
+        var first=statements.generate(identity(),sourceId,today,today,"historical-statement-a-01","corr");
+        var snapshotA=statements.snapshot(identity(),first.id());
+        byte[] csvA=statementExports.csv(snapshotA);
+        long journal=jdbc.sql("SELECT journal_id FROM transfers WHERE public_id=:id").param("id",transfer.id()).query(Long.class).single();
+        ledger.reverse(journal,"historical-reversal-batch","historical-reversal-journal");
+        var second=statements.generate(identity(),sourceId,today,today,"historical-statement-b-01","corr");
+        var snapshotAAgain=statements.snapshot(identity(),first.id());
+        var snapshotB=statements.snapshot(identity(),second.id());
+        assertThat(snapshotAAgain.summary()).isEqualTo(snapshotA.summary());
+        assertThat(statementExports.csv(snapshotAAgain)).isEqualTo(csvA);
+        assertThat(snapshotA.summary().closingBalanceMinor()).isEqualTo(90_000);
+        assertThat(snapshotB.summary().closingBalanceMinor()).isEqualTo(100_000);
+        assertThat(snapshotB.summary().totalDebitMinor()).isEqualTo(10_000);
+        assertThat(snapshotB.summary().totalCreditMinor()).isEqualTo(10_000);
+        assertThat(snapshotB.entries()).extracting("transactionType").containsExactlyInAnyOrder("TRANSFER","REVERSAL");
+        jdbc.sql("UPDATE statement_generations SET content_checksum=repeat('0',64) WHERE public_id=:id").param("id",first.id()).update();
+        assertThatThrownBy(()->statements.snapshot(identity(),first.id())).isInstanceOf(DomainException.class).hasMessageContaining("integrity");
+    }
+
+    @Test void fundedDepositHasReceiptButUnpostedResourcesDoNot() {
+        var opened=deposits.confirm(identity(),depositRequest("SANDBOX_FD_GOLD",100_000,3),"FIXED","receipt-deposit-key-001","corr");
+        UUID journal=jdbc.sql("SELECT j.public_id FROM deposit_posting_references d JOIN journals j ON j.id=d.journal_id JOIN deposit_accounts a ON a.id=d.deposit_account_id WHERE a.public_id=:id").param("id",opened.id()).query(UUID.class).single();
+        assertThat(statements.receipt(identity(),journal).status()).isEqualTo("COMPLETED");
+        assertThatThrownBy(()->statements.receipt(identity(),UUID.randomUUID())).isInstanceOf(DomainException.class);
+    }
+
+    @Test void profileAllowsOnlyVersionedLowRiskDisplayNameChange() {
+        var before=profiles.view(identity());
+        var changed=profiles.update(identity(),new ProfileService.ProfileUpdate("Fictional Preferred",before.version()));
+        assertThat(changed.preferredDisplayName()).isEqualTo("Fictional Preferred");
+        assertThatThrownBy(()->profiles.update(identity(),new ProfileService.ProfileUpdate("Stale",before.version())))
+            .isInstanceOf(DomainException.class).hasMessageContaining("changed");
+        assertThat(changed.registeredEmail()).isNull();
+    }
+
+    @Test void serviceRequestsAreOwnedDurableAndIdempotent() {
+        var request=new ServiceRequestService.Create("CONTACT_UPDATE_ASSISTANCE","Please explain the approved contact update process.");
+        var created=serviceRequests.create(identity(),request,"service-request-key-0001");
+        assertThat(serviceRequests.create(identity(),request,"service-request-key-0001").id()).isEqualTo(created.id());
+        assertThat(serviceRequests.history(identity(),created.id())).extracting("status").containsExactly("SUBMITTED");
+        assertThatThrownBy(()->serviceRequests.one(new FederatedIdentity(issuer(),"another-customer"),created.id())).isInstanceOf(DomainException.class);
+    }
+
+    @Test void notificationsProjectCommittedOutboxOnceAndEnforceOwnership() {
+        transfers.execute("oidc-customer-1","notification-transfer-key-01",request(500),"corr");
+        assertThat(notifications.list(identity(),0,25)).extracting("title").contains("Transfer completed");
+        assertThat(notifications.list(identity(),0,25).stream().filter(n->n.title().equals("Transfer completed"))).hasSize(1);
+        UUID id=notifications.list(identity(),0,25).getFirst().id();
+        assertThatThrownBy(()->notifications.read(new FederatedIdentity(issuer(),"another-customer"),id)).isInstanceOf(DomainException.class);
+    }
+
+    @Test void phaseHMutationsRequireCsrfAndSensitiveContactFieldsAreNotAccepted() throws Exception {
+        mockMvc.perform(patch("/api/v1/profile").with(customerLogin()).contentType(MediaType.APPLICATION_JSON).content("{\"preferredDisplayName\":\"Safe name\",\"version\":0}")).andExpect(status().isForbidden());
+        mockMvc.perform(patch("/api/v1/profile").with(customerLogin()).with(csrf()).contentType(MediaType.APPLICATION_JSON).content("{\"preferredDisplayName\":\"Safe name\",\"registeredEmail\":\"attacker@example.test\",\"emailVerified\":true,\"version\":0}")).andExpect(status().isOk());
+        assertThat(jdbc.sql("SELECT registered_email IS NULL AND email_verified=false FROM customers WHERE identity_subject='oidc-customer-1'").query(Boolean.class).single()).isTrue();
+    }
+
     private org.springframework.test.web.servlet.request.RequestPostProcessor customerLogin(){
         return oidcLogin().idToken(token -> token.issuer("http://localhost:8081/realms/novara").subject("oidc-customer-1"))
             .authorities(createAuthorityList("ROLE_CUSTOMER"));
@@ -314,7 +530,17 @@ class BankingIntegrationTest {
     private CreateBeneficiaryRequest beneficiaryRequest(String account){return new CreateBeneficiaryRequest("Fictional Beneficiary","Test",account,"NOVA0001","Novara Bank","INTERNAL");}
     private String issuer(){return "http://localhost:8081/realms/novara";}
     private FederatedIdentity identity(){return new FederatedIdentity(issuer(),"oidc-customer-1");}
+    private ReviewRequest depositRequest(String code,long amount,int tenure){UUID product=jdbc.sql("SELECT public_id FROM deposit_products WHERE code=:code").param("code",code).query(UUID.class).single();return new ReviewRequest(product,amount,tenure,sourceId,"CREDIT_LINKED_ACCOUNT");}
     private long balance(long ledgerId){return jdbc.sql("SELECT balance_minor FROM ledger_balances WHERE ledger_account_id=:id").param("id",ledgerId).query(Long.class).single();}
+    private UUID seedCard(String status){
+        long customer=jdbc.sql("SELECT id FROM customers WHERE identity_subject='oidc-customer-1'").query(Long.class).single();
+        long account=jdbc.sql("SELECT id FROM bank_accounts WHERE public_id=:id").param("id",sourceId).query(Long.class).single();
+        long product=jdbc.sql("SELECT id FROM card_products WHERE code='NOVARA_GOLD'").query(Long.class).single();
+        long card=jdbc.sql("INSERT INTO cards(product_id,customer_id,linked_account_id,cardholder_name,masked_reference,processor_reference,status,expiry_month,expiry_year) VALUES(:p,:c,:a,'FICTIONAL CUSTOMER','**** 4821',:processor,:status,9,2029) RETURNING id")
+            .param("p",product).param("c",customer).param("a",account).param("processor","sandbox-"+UUID.randomUUID()).param("status",status).query(Long.class).single();
+        jdbc.sql("INSERT INTO card_controls(card_id) VALUES(:id)").param("id",card).update();
+        return jdbc.sql("SELECT public_id FROM cards WHERE id=:id").param("id",card).query(UUID.class).single();
+    }
     private SeedAccount createAccount(String code,String hash,String masked,long balance){
         long ledgerId=jdbc.sql("INSERT INTO ledger_accounts(code,name,classification,currency) VALUES(:code,:code,'LIABILITY','INR') RETURNING id").param("code",code).query(Long.class).single();
         jdbc.sql("INSERT INTO ledger_balances(ledger_account_id,balance_minor) VALUES(:id,:balance)").param("id",ledgerId).param("balance",balance).update();

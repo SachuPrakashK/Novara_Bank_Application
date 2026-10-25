@@ -10,9 +10,15 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.net.URI;
+import com.novara.banking.statement.DocumentRateLimitException;
+import org.springframework.http.ResponseEntity;
 
 @RestControllerAdvice
 public class ApiExceptionHandler {
+    @ExceptionHandler(DocumentRateLimitException.class)
+    ResponseEntity<ProblemDetail> rateLimit(DocumentRateLimitException exception, HttpServletRequest request) {
+        var problem=ProblemDetail.forStatusAndDetail(HttpStatus.TOO_MANY_REQUESTS,exception.getMessage());problem.setTitle("DOCUMENT_RATE_LIMITED");problem.setProperty("code","DOCUMENT_RATE_LIMITED");problem.setInstance(URI.create(request.getRequestURI()));return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS).header("Retry-After",Long.toString(exception.retryAfter())).body(problem);
+    }
     @ExceptionHandler(DomainException.class)
     ProblemDetail domain(DomainException exception, HttpServletRequest request) {
         var problem = ProblemDetail.forStatusAndDetail(exception.status(), exception.getMessage());

@@ -1,0 +1,13 @@
+package com.novara.banking.card;
+import com.novara.banking.identity.*; import jakarta.validation.Valid; import jakarta.validation.constraints.*; import org.slf4j.MDC; import org.springframework.security.core.Authentication; import org.springframework.web.bind.annotation.*; import java.util.*; import java.time.LocalDate;
+@RestController @RequestMapping("/api/v1/cards") public class CardController {
+ private final CardService cards;private final CurrentIdentity identities;private final StepUpAuthorizationService stepUp;
+ public CardController(CardService c,CurrentIdentity i,StepUpAuthorizationService s){cards=c;identities=i;stepUp=s;}
+ @GetMapping List<CardView> list(Authentication a){return cards.list(identities.from(a));}
+ @GetMapping("/{id}") CardView get(Authentication a,@PathVariable UUID id){return cards.owned(identities.from(a),id);}
+ @GetMapping("/{id}/activity") CardView.ActivityPage activity(Authentication a,@PathVariable UUID id,@RequestParam(defaultValue="0") @Min(0) int page,@RequestParam(defaultValue="20") @Min(1) @Max(100) int size,@RequestParam(defaultValue="") @Size(max=80) String search,@RequestParam(required=false) String status,@RequestParam(required=false) LocalDate from,@RequestParam(required=false) LocalDate to,@RequestParam(defaultValue="desc") String direction){return cards.activity(identities.from(a),id,page,size,search,status,from,to,direction);}
+ @PostMapping("/{id}/freeze") CardView freeze(Authentication a,@PathVariable UUID id,@RequestHeader("Idempotency-Key") String key){return cards.status(identities.from(a),id,"FROZEN",key,MDC.get("correlationId"));}
+ @PostMapping("/{id}/unfreeze") CardView unfreeze(Authentication a,@PathVariable UUID id,@RequestHeader("Idempotency-Key") String key){stepUp.requireForSensitiveAction(a,"Recent MFA is required to unfreeze a card.");return cards.status(identities.from(a),id,"ACTIVE",key,MDC.get("correlationId"));}
+ @PutMapping("/{id}/controls") CardView controls(Authentication a,@PathVariable UUID id,@RequestHeader("Idempotency-Key") String key,@Valid @RequestBody CardCommands.Controls c){stepUp.requireForSensitiveAction(a,"Recent MFA is required to change card controls and limits.");return cards.controls(identities.from(a),id,c,key,MDC.get("correlationId"));}
+ @PostMapping("/{id}/service-requests") CardView.Service request(Authentication a,@PathVariable UUID id,@Valid @RequestBody CardCommands.ServiceRequest r){if(Set.of("LOST","REPLACEMENT").contains(r.requestType()))stepUp.requireForSensitiveAction(a,"Recent MFA is required for this card request.");return cards.request(identities.from(a),id,r,MDC.get("correlationId"));}
+}
