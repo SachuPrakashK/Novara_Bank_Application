@@ -186,6 +186,28 @@ class BankingIntegrationTest {
     @Test void sensitiveEndpointsRejectMissingAuthenticationAndOperationsScope() throws Exception {
         mockMvc.perform(get("/api/v1/accounts")).andExpect(status().isUnauthorized());
         mockMvc.perform(post("/api/v1/operations/reconciliation").with(jwt().jwt(token->token.subject("oidc-customer-1")))).andExpect(status().isForbidden());
+        mockMvc.perform(post("/api/v1/operations/reconciliation").with(jwt().jwt(token->token.subject("staff-demo")).authorities(createAuthorityList("ROLE_OPERATIONS","SCOPE_operations.reconcile")))).andExpect(status().isForbidden());
+    }
+    @Test void forgedBearerRolesCannotBypassOperationsDenyAll() throws Exception {
+        mockMvc.perform(get("/api/v1/operations/dashboard").with(jwt().jwt(token->token.subject("oidc-customer-1"))
+            .authorities(createAuthorityList("ROLE_ADMINISTRATOR","ROLE_OPERATIONS","SCOPE_operations.reconcile"))))
+            .andExpect(status().isForbidden());
+    }
+    @Test void browserSessionsCannotBypassOperationsDenyAll() throws Exception {
+        mockMvc.perform(post("/api/v1/operations/reconciliation").with(oidcLogin().authorities(
+            createAuthorityList("ROLE_OPERATIONS","SCOPE_operations.reconcile"))).with(csrf()))
+            .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/operations/customers").with(oidcLogin()))
+            .andExpect(status().isForbidden());
+    }
+    @Test void operationsMutationShapesRemainUnavailable() throws Exception {
+        var target="/api/v1/operations/accounts/"+UUID.randomUUID();
+        var proposedStaff=jwt().jwt(token->token.subject("staff-demo"))
+            .authorities(createAuthorityList("ROLE_OPERATIONS","SCOPE_operations.write"));
+        mockMvc.perform(post(target).with(proposedStaff)).andExpect(status().isForbidden());
+        mockMvc.perform(put(target).with(proposedStaff)).andExpect(status().isForbidden());
+        mockMvc.perform(patch(target).with(proposedStaff)).andExpect(status().isForbidden());
+        mockMvc.perform(delete(target).with(proposedStaff)).andExpect(status().isForbidden());
     }
     @Test void cardOwnershipStatusAndIdempotencyAreEnforced(){
         UUID card=seedCard("ACTIVE");var identity=new FederatedIdentity("http://localhost:8081/realms/novara","oidc-customer-1");
@@ -503,6 +525,27 @@ class BankingIntegrationTest {
         assertThat(serviceRequests.create(identity(),request,"service-request-key-0001").id()).isEqualTo(created.id());
         assertThat(serviceRequests.history(identity(),created.id())).extracting("status").containsExactly("SUBMITTED");
         assertThatThrownBy(()->serviceRequests.one(new FederatedIdentity(issuer(),"another-customer"),created.id())).isInstanceOf(DomainException.class);
+    }
+
+    @Test void concurrentServiceRequestRetryCreatesOneRequestAndOneHistoryEvent() throws Exception {
+        var request=new ServiceRequestService.Create("ACCOUNT_INFORMATION","Please explain the available account information.");
+        try(var executor=Executors.newVirtualThreadPerTaskExecutor()){
+            var start=new CountDownLatch(1);
+            var one=executor.submit(()->{start.await();return serviceRequests.create(identity(),request,"service-concurrent-key-01");});
+            var two=executor.submit(()->{start.await();return serviceRequests.create(identity(),request,"service-concurrent-key-01");});
+            start.countDown();assertThat(one.get(10,TimeUnit.SECONDS).id()).isEqualTo(two.get(10,TimeUnit.SECONDS).id());
+        }
+        assertThat(jdbc.sql("SELECT count(*) FROM service_requests").query(Long.class).single()).isEqualTo(1);
+        assertThat(jdbc.sql("SELECT count(*) FROM service_request_status_events").query(Long.class).single()).isEqualTo(1);
+        assertThat(jdbc.sql("SELECT count(*) FROM customer_notifications").query(Long.class).single()).isEqualTo(1);
+    }
+
+    @Test void serviceRequestPaginationSearchAndSensitiveDescriptionProtection() {
+        serviceRequests.create(identity(),new ServiceRequestService.Create("ACCOUNT_INFORMATION","Please provide safe account information."),"service-page-key-00001");
+        serviceRequests.create(identity(),new ServiceRequestService.Create("CARD_SUPPORT","Please provide safe card support guidance."),"service-page-key-00002");
+        var page=serviceRequests.page(identity(),0,1,"card","newest");
+        assertThat(page.totalElements()).isEqualTo(1);assertThat(page.items()).singleElement().extracting("category").isEqualTo("CARD_SUPPORT");
+        assertThatThrownBy(()->serviceRequests.create(identity(),new ServiceRequestService.Create("GENERAL_ACCOUNT_SUPPORT","My OTP is 123456, please investigate."),"service-sensitive-key-1")).isInstanceOf(DomainException.class).hasMessageContaining("Remove");
     }
 
     @Test void notificationsProjectCommittedOutboxOnceAndEnforceOwnership() {

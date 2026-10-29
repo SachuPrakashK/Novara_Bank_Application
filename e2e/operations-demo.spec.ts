@@ -1,0 +1,9 @@
+import { expect,test } from '@playwright/test';
+
+test.beforeEach(async({page})=>{await page.goto('/login');await page.getByRole('button',{name:'Explore the synthetic operations demo'}).click();await expect(page).toHaveURL(/operations-demo\/dashboard/);});
+
+test('renders a clearly synthetic isolated operations dashboard',async({page})=>{await expect(page.getByText('NO REAL CUSTOMER DATA')).toBeVisible();await expect(page.getByRole('heading',{name:'Operations dashboard'})).toBeVisible();await expect(page.getByText('Authenticated internal operations are disabled.')).toBeVisible();});
+
+test('queue search filters pagination and blocked actions work',async({page})=>{await page.getByRole('link',{name:'Service requests'}).click();await page.getByLabel('Search requests').fill('SR-4101');await expect(page.getByText('SR-4101')).toBeVisible();await page.getByText('SR-4101').click();await expect(page.getByText(/Assignment, review/)).toBeVisible();await expect(page.getByRole('button',{name:'Previous'})).toBeDisabled();});
+
+test('directory oversight audit monitoring and settings stay read-only on mobile',async({page})=>{await page.setViewportSize({width:390,height:844});for(const [link,heading] of [['Customer directory','Customer directory'],['Account oversight','Account oversight'],['Audit explorer','Audit explorer']] as const){await page.getByRole('link',{name:link}).click();await expect(page.getByRole('heading',{name:heading})).toBeVisible();}await page.getByRole('link',{name:'Outbox monitoring'}).click();await expect(page.getByRole('button',{name:'Replay selected event'})).toBeDisabled();await page.getByRole('link',{name:'Operations settings'}).click();await expect(page.getByRole('heading',{name:'Operations settings'})).toBeVisible();const overflow=await page.evaluate(()=>document.documentElement.scrollWidth>document.documentElement.clientWidth);expect(overflow).toBeFalsy();});

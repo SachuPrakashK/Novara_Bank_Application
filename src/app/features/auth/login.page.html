@@ -33,6 +33,7 @@
         <button class="primary" type="submit" [disabled]="loading()">{{ loading() ? 'Signing in…' : 'Sign in to demo' }}</button>
       </form>
       <button class="demo" type="button" (click)="enterDemo()">Explore the fictional customer demo</button>
+      <button class="demo" type="button" (click)="enterOperationsDemo()">Explore the synthetic operations demo</button>
     } @else {
       <p class="notice">Continue to Novara's identity provider. Passwords, MFA codes, and passkeys are never handled by this application.</p>
       <button class="primary" type="button" (click)="continueSecurely()">Continue securely</button>

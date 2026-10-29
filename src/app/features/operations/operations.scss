@@ -1,0 +1,237 @@
+:host {
+  display: block;
+  max-width: 100%;
+  overflow-x: hidden;
+}
+.ops-shell {
+  display: grid;
+  grid-template-columns: 16.5rem minmax(0, 1fr);
+  min-height: 100dvh;
+  max-width: 100%;
+  background: var(--novara-bg);
+}
+aside {
+  position: sticky;
+  top: 0;
+  height: 100dvh;
+  min-width: 0;
+  box-sizing: border-box;
+  padding: 1.4rem 1rem;
+  background: var(--novara-sidebar);
+  border-right: 1px solid var(--novara-border);
+}
+aside nav {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 1.5rem;
+}
+aside nav a,
+.exit {
+  padding: 0.78rem 0.85rem;
+  border-radius: 0.65rem;
+  color: var(--novara-text-secondary);
+  font-size: 0.75rem;
+  font-weight: 650;
+  text-decoration: none;
+}
+.active {
+  background: var(--novara-nav-selected);
+  color: var(--novara-primary) !important;
+  box-shadow: inset 3px 0 var(--novara-gold);
+}
+.demo-label {
+  display: block;
+  width: max-content;
+  margin-top: 1rem;
+  padding: 0.3rem 0.55rem;
+  border-radius: 99px;
+  background: var(--novara-warning-soft);
+  color: var(--novara-warning);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.exit {
+  position: absolute;
+  bottom: 1.4rem;
+  left: 1rem;
+}
+.ops-shell > main {
+  min-width: 0;
+}
+.ops-shell header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 4.7rem;
+  padding: 0 2rem;
+  background: var(--novara-surface);
+  border-bottom: 1px solid var(--novara-border);
+}
+header b,
+header small {
+  display: block;
+}
+header small {
+  margin-top: 0.2rem;
+  color: var(--novara-text-secondary);
+  font-size: 0.67rem;
+}
+header > span {
+  color: var(--novara-danger);
+  font-size: 0.63rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.workspace {
+  padding: 2rem;
+}
+.eyebrow {
+  color: var(--novara-gold-dark);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+}
+.workspace h1 {
+  margin: 0.35rem 0;
+  font: 650 2rem var(--novara-font-display);
+}
+.intro {
+  margin: 0 0 1.5rem;
+  color: var(--novara-text-secondary);
+  font-size: 0.8rem;
+}
+.kpis {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1rem;
+}
+.kpi,
+.panel {
+  padding: 1.25rem;
+  border: 1px solid var(--novara-border);
+  border-radius: 1rem;
+  background: var(--novara-surface);
+  box-shadow: var(--novara-shadow-sm);
+}
+.kpi small {
+  color: var(--novara-text-secondary);
+  font-size: 0.68rem;
+}
+.kpi strong {
+  display: block;
+  margin-top: 0.5rem;
+  font: 650 1.7rem var(--novara-font-display);
+}
+.panel {
+  margin-top: 1rem;
+}
+.filters {
+  display: flex;
+  gap: 0.7rem;
+  flex-wrap: wrap;
+  margin: 1rem 0;
+}
+.filters input,
+.filters select {
+  min-height: 2.55rem;
+  padding: 0 0.7rem;
+  border: 1px solid var(--novara-border);
+  border-radius: 0.6rem;
+  background: var(--novara-bg-subtle);
+  color: var(--novara-text-primary);
+}
+table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.72rem;
+}
+th,
+td {
+  padding: 0.8rem;
+  text-align: left;
+  border-bottom: 1px solid var(--novara-border);
+}
+th {
+  color: var(--novara-text-secondary);
+}
+.badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  border-radius: 99px;
+  background: var(--novara-primary-soft);
+  color: var(--novara-primary);
+  font-size: 0.6rem;
+  font-weight: 750;
+}
+.actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: 1rem;
+}
+.actions button {
+  padding: 0.6rem 0.8rem;
+  border: 1px solid var(--novara-border);
+  border-radius: 0.55rem;
+  background: var(--novara-surface);
+  color: var(--novara-text-primary);
+}
+.actions button:disabled {
+  opacity: 0.45;
+}
+.blocked {
+  padding: 1rem;
+  border-radius: 0.7rem;
+  background: var(--novara-warning-soft);
+  color: var(--novara-text-secondary);
+  font-size: 0.73rem;
+}
+.detail {
+  margin-top: 1rem;
+  padding: 1rem;
+  border-left: 3px solid var(--novara-gold);
+  background: var(--novara-bg-subtle);
+}
+@media (max-width: 900px) {
+  .ops-shell {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  aside {
+    position: static;
+    height: auto;
+  }
+  aside nav {
+    display: flex;
+    max-width: 100%;
+    overflow: auto;
+  }
+  .exit {
+    position: static;
+    display: block;
+  }
+  .kpis {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+@media (max-width: 560px) {
+  .ops-shell header {
+    padding: 0 1rem;
+  }
+  .ops-shell header > span {
+    display: none;
+  }
+  .workspace {
+    padding: 1.2rem 1rem;
+  }
+  .kpis {
+    grid-template-columns: 1fr;
+  }
+  .panel {
+    overflow: auto;
+  }
+  th,
+  td {
+    white-space: nowrap;
+  }
+}
