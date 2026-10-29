@@ -4,7 +4,7 @@
 
 Phase E adds the `com.novara.banking.deposit` bounded module without introducing another service or ledger. Versioned products feed server-side reviews; confirmed contracts snapshot accepted terms; FD funding and RD installments reuse the existing immutable double-entry journal. The Angular deposit route is standalone and lazy-loaded inside the shared authenticated shell. See `MILESTONE_3_PHASE_E_ARCHITECTURE.md` for boundaries and blocked policy-dependent workflows.
 
-Status: Phases A–C implemented and verified at the automated-test level. Phases D–I have not started. Production release remains blocked by inherited authentication and deployment evidence gaps.
+Status: Phases A–H are implemented for their documented sandbox scopes. Phase G.1 and H.1 completed their reported stabilization scopes. Phase I provides an isolated synthetic operations demonstration; authenticated real-data operations remain fail-closed. Phase J has not started. Production release remains blocked by unresolved identity-provider acceptance, operational authorization, notification-provider, retention, accessibility, performance, and deployment controls.
 
 Phase C adds server-authorized payment intents, verified opaque beneficiary resolution, concurrency-safe limits, durable schedules and occurrences, ownership-scoped history and receipts, and a premium Angular payment workspace. See `MILESTONE_3_PHASE_C_ARCHITECTURE.md` for detailed boundaries.
 
@@ -42,11 +42,27 @@ Phase F adds versioned sandbox loan products, authoritative EMI quotes with dura
 
 # Phase G status
 
-Phase G adds authoritative posted-ledger statements, deterministic balances, server-side transaction filtering/pagination, versioned statement generation metadata, secure PDF/CSV downloads, and posted-journal receipts. Unsupported or unposted financial events never receive receipts. See `MILESTONE_3_PHASE_G_ARCHITECTURE.md` and `STATEMENT_BALANCE_RULES.md`. Phase H has not started.
+Phase G adds authoritative posted-ledger statements, deterministic balances, server-side transaction filtering/pagination, versioned statement generation metadata, secure PDF/CSV downloads, and posted-journal receipts. Unsupported or unposted financial events never receive receipts. See `MILESTONE_3_PHASE_G_ARCHITECTURE.md` and `STATEMENT_BALANCE_RULES.md`.
 
 # Phase G.1 status
 
-Phase G.1 hardens reproducibility with a repeatable-read ledger sequence cutoff, checksum enforcement, PostgreSQL-shared document rate limits, safer CSV/PDF behavior, receipt details, and responsive browser coverage. Production blockers remain documented in `MILESTONE_3_PHASE_G_1_REMAINING_RISKS.md`. Phase H has not started.
+Phase G.1 hardens reproducibility with a repeatable-read ledger sequence cutoff, checksum enforcement, PostgreSQL-shared document rate limits, safer CSV/PDF behavior, receipt details, and responsive browser coverage. Production blockers remain documented in `MILESTONE_3_PHASE_G_1_REMAINING_RISKS.md`.
+
+# Phase H and H.1 status
+
+Phase H delivered the sandbox customer profile, account-service requests, Security Center, preferences, and durable in-app notifications. Phase H.1 hardens concurrent request submission, bounded search/sort/pagination, notification pagination, explicit mock-browser labeling, error/retry states, and operational decision records. Staff transitions and external notification delivery remain disabled pending approved authorization models and providers.
+
+# Phase I status
+
+Phase I adds a development-build-only Angular operations workspace backed exclusively by synthetic fixtures. It is separate from the customer shell and has no HTTP/customer repository adapter. All `/api/v1/operations/**` access is deny-all for browser and bearer security chains until staff identity, entitlements, purpose scopes, queues, and policies are approved. No financial mutation or privileged seed data was added.
+
+# Phase I.1 status
+
+Phase I.1 converts the operations proposals into decision-ready staff identity, permission, segregation-of-duties, entitlement schema, customer-data governance, workflow, queue, privileged audit, outbox recovery, API, threat, decision, and readiness specifications. Safe regression tests verify browser and bearer deny-all behavior, forged/proposed roles, unavailable mutation shapes, production demo blocking, and the synthetic adapter's lack of an HTTP dependency. All staff permissions and persistence remain proposed; Flyway stays V1-V11 and Gates A-G are blocked. Phase J is NO-GO.
+
+# Phase I.2 status
+
+Phase I.2 adds a test-source-only workforce identity, entitlement, scoped authorization, revocation, concurrency, and segregation-of-duties proof of concept plus a separate userless Keycloak realm template. The POC has no runtime endpoint, banking repository, production profile, persistent privileged data, or financial capability. Mock authorization tests pass; authentic workforce provider and MFA acceptance remain blocked. Operations APIs remain deny-all, Flyway remains V1-V11, Gates A-G remain blocked, and Phase J is NO-GO.
 
 # Reversal semantics clarification
 

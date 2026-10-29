@@ -16,4 +16,5 @@ export class LoginPage {
   protected continueSecurely(): void { this.auth.redirectToIdentityProvider('/dashboard'); }
   protected async submit(): Promise<void> { if (this.form.invalid || this.loading()) { this.form.markAllAsTouched(); return; } this.loading.set(true); this.error.set(''); try { await this.auth.beginSignIn(this.form.controls.username.value, this.form.controls.password.value, this.form.controls.remember.value); await this.router.navigate(['/auth/mfa']); } catch { this.error.set('We could not sign you in. Check your details or try again shortly.'); } finally { this.loading.set(false); } }
   protected enterDemo(): void { if (!this.demoEnabled) return; this.auth.useDemoSession(); void this.router.navigate(['/dashboard']); }
+  protected enterOperationsDemo(): void { if (!this.demoEnabled) return; void this.router.navigate(['/operations-demo/dashboard']); }
 }

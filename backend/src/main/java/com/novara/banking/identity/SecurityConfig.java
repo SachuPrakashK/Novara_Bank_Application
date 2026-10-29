@@ -58,7 +58,7 @@ public class SecurityConfig {
             })
             .csrf(csrf -> csrf.disable()).cors(Customizer.withDefaults())
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth.requestMatchers("/api/v1/**").authenticated().anyRequest().denyAll())
+            .authorizeHttpRequests(auth -> auth.requestMatchers("/api/v1/operations/**").denyAll().requestMatchers("/api/v1/**").authenticated().anyRequest().denyAll())
             .oauth2ResourceServer(resource -> resource.jwt(Customizer.withDefaults())).build();
     }
 
@@ -76,7 +76,7 @@ public class SecurityConfig {
         return http.cors(Customizer.withDefaults()).csrf(config -> config.csrfTokenRepository(csrf).csrfTokenRequestHandler(new SpaCsrfTokenRequestHandler()))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/actuator/health/**", "/error", "/oauth2/**", "/login/**", "/api/v1/auth/login", "/api/v1/auth/session").permitAll()
-                .requestMatchers("/api/v1/operations/**").hasAnyRole("OPERATIONS", "COMPLIANCE", "ADMINISTRATOR")
+                .requestMatchers("/api/v1/operations/**").denyAll()
                 .requestMatchers("/api/v1/auth/**").authenticated()
                 .requestMatchers("/api/v1/**").authenticated()
                 .anyRequest().denyAll())

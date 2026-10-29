@@ -1,9 +1,19 @@
 import type { Routes } from '@angular/router';
 import { authGuard, guestGuard, mfaChallengeGuard } from './core/auth/auth.guard';
+import { operationsDemoGuard } from './core/operations/operations-demo.guard';
 
 export const routes: Routes = [
   { path: 'login', canActivate: [guestGuard], loadComponent: () => import('./features/auth/login.page').then((m) => m.LoginPage), title: 'Sign in | Novara Bank' },
   { path: 'auth/mfa', canActivate: [mfaChallengeGuard], loadComponent: () => import('./features/auth/mfa.page').then((m) => m.MfaPage), title: 'Verify your identity | Novara Bank' },
+  { path: 'operations-demo', canActivate: [operationsDemoGuard], loadComponent:()=>import('./features/operations/operations-shell.component').then(m=>m.OperationsShellComponent),children:[
+    {path:'dashboard',loadComponent:()=>import('./features/operations/operations-dashboard.page').then(m=>m.OperationsDashboardPage)},
+    {path:'requests',loadComponent:()=>import('./features/operations/service-request-queue.page').then(m=>m.ServiceRequestQueuePage)},
+    {path:'customers',loadComponent:()=>import('./features/operations/customer-directory.page').then(m=>m.CustomerDirectoryPage)},
+    {path:'accounts',loadComponent:()=>import('./features/operations/account-oversight.page').then(m=>m.AccountOversightPage)},
+    {path:'audit',loadComponent:()=>import('./features/operations/audit-explorer.page').then(m=>m.AuditExplorerPage)},
+    {path:'monitoring',loadComponent:()=>import('./features/operations/outbox-monitoring.page').then(m=>m.OutboxMonitoringPage)},
+    {path:'settings',loadComponent:()=>import('./features/operations/operations-settings.page').then(m=>m.OperationsSettingsPage)},
+    {path:'',pathMatch:'full',redirectTo:'dashboard'}]},
   {
     path: '', canActivate: [authGuard],
     loadComponent: () => import('./layout/app-shell.component').then((m) => m.AppShellComponent),
