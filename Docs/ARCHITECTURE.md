@@ -4,7 +4,7 @@ Novara is organized by product feature with a small `core` boundary and reusable
 
 Money is represented as integer minor units plus an ISO currency. This avoids treating binary floating-point values as domain amounts. Formatting is a presentation concern. The browser never calculates authoritative balances, fees, eligibility, limits, or ledger entries.
 
-The authenticated shell adapts from a persistent desktop sidebar to an off-canvas tablet menu and a purpose-built mobile bottom navigation. Semantic tokens implement light, dark, and system-preference themes.
+The authenticated shell adapts from a persistent desktop sidebar to an off-canvas tablet menu and a purpose-built mobile bottom navigation. Semantic tokens implement explicit light and dark themes, with dark as the default.
 
 Customer Banking is the first deployable application. Business Banking, Staff/Teller, Operations, and Administration should become separate workspace applications when their milestones begin, sharing intentional libraries rather than feature internals.
 

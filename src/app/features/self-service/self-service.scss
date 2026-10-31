@@ -1,1 +1,185 @@
-:host{display:block}.hero{padding:1.7rem;border-radius:1.2rem;background:linear-gradient(120deg,var(--novara-primary),color-mix(in srgb,var(--novara-primary) 82%,#000));color:#fff}.hero .overline{color:var(--novara-gold)}.hero h1{margin:.4rem 0;font:600 2rem var(--novara-font-display)}.hero p{max-width:46rem;margin:0;color:#dce6ed;font-size:.82rem}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:1rem;margin-top:1rem}.card{padding:1.35rem;border:1px solid var(--novara-border);border-radius:1rem;background:var(--novara-surface);box-shadow:var(--novara-shadow-sm)}.card h2{margin:0 0 1rem;font:650 1.1rem var(--novara-font-display)}dl{display:grid;gap:.8rem;margin:0}dt{color:var(--novara-text-secondary);font-size:.68rem}dd{margin:.2rem 0 0;font-size:.84rem;font-weight:650}.muted{color:var(--novara-text-secondary);font-size:.76rem}.verified{color:var(--novara-success)}.locked{padding:.8rem;border-radius:.7rem;background:var(--novara-bg-subtle);color:var(--novara-text-secondary);font-size:.74rem}.field{display:grid;gap:.35rem;margin:.75rem 0}.field span{font-size:.7rem;font-weight:700}.field input,.field select,.field textarea{width:100%;box-sizing:border-box;padding:.75rem;border:1px solid var(--novara-border);border-radius:.65rem;background:var(--novara-bg-subtle);color:var(--novara-text-primary);font:inherit}.field textarea{min-height:7rem;resize:vertical}.primary,.secondary{padding:.75rem 1rem;border-radius:.65rem;font-weight:700;cursor:pointer}.primary{border:0;background:var(--novara-action-primary);color:var(--novara-action-primary-text)}.secondary{border:1px solid var(--novara-border);background:var(--novara-action-secondary);color:var(--novara-action-secondary-text)}button:disabled{opacity:.55;cursor:not-allowed}.item{display:grid;gap:.35rem;padding:1rem 0;border-bottom:1px solid var(--novara-border)}.item:last-child{border:0}.item-head{display:flex;justify-content:space-between;gap:1rem}.item p{margin:0;color:var(--novara-text-secondary);font-size:.77rem}.badge{width:max-content;padding:.25rem .5rem;border-radius:99px;background:var(--novara-primary-soft);color:var(--novara-primary);font-size:.64rem;font-weight:750}.unread{border-left:3px solid var(--novara-gold);padding-left:.8rem}.actions{display:flex;gap:.6rem;flex-wrap:wrap}.success{color:var(--novara-success);font-size:.76rem}.error{color:var(--novara-danger);font-size:.76rem}.switch{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:.8rem 0;border-bottom:1px solid var(--novara-border)}.switch input{width:1.1rem;height:1.1rem}@media(max-width:760px){.grid{grid-template-columns:1fr}.hero{padding:1.25rem}.hero h1{font-size:1.65rem}}
+:host {
+  display: block;
+}
+.hero {
+  padding: 1.7rem;
+  border-radius: 1.2rem;
+  background: linear-gradient(
+    120deg,
+    var(--novara-brand-panel),
+    color-mix(in srgb, var(--novara-brand-panel) 82%, #000)
+  );
+  color: var(--novara-brand-panel-text);
+}
+.hero .overline {
+  color: var(--novara-gold);
+}
+.hero h1 {
+  margin: 0.4rem 0;
+  font: 600 2rem var(--novara-font-display);
+}
+.hero p {
+  max-width: 46rem;
+  margin: 0;
+  color: color-mix(in srgb, var(--novara-brand-panel-text) 84%, transparent);
+  font-size: 0.82rem;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+.card {
+  padding: 1.35rem;
+  border: 1px solid var(--novara-border);
+  border-radius: 1rem;
+  background: var(--novara-surface);
+  box-shadow: var(--novara-shadow-sm);
+}
+.card h2 {
+  margin: 0 0 1rem;
+  font: 650 1.1rem var(--novara-font-display);
+}
+dl {
+  display: grid;
+  gap: 0.8rem;
+  margin: 0;
+}
+dt {
+  color: var(--novara-text-secondary);
+  font-size: 0.68rem;
+}
+dd {
+  margin: 0.2rem 0 0;
+  font-size: 0.84rem;
+  font-weight: 650;
+}
+.muted {
+  color: var(--novara-text-secondary);
+  font-size: 0.76rem;
+}
+.verified {
+  color: var(--novara-success);
+}
+.locked {
+  padding: 0.8rem;
+  border-radius: 0.7rem;
+  background: var(--novara-bg-subtle);
+  color: var(--novara-text-secondary);
+  font-size: 0.74rem;
+}
+.field {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0.75rem 0;
+}
+.field span {
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.field input,
+.field select,
+.field textarea {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem;
+  border: 1px solid var(--novara-border);
+  border-radius: 0.65rem;
+  background: var(--novara-bg-subtle);
+  color: var(--novara-text-primary);
+  font: inherit;
+}
+.field textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+.primary,
+.secondary {
+  padding: 0.75rem 1rem;
+  border-radius: 0.65rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+.primary {
+  border: 0;
+  background: var(--novara-action-primary);
+  color: var(--novara-action-primary-text);
+}
+.secondary {
+  border: 1px solid var(--novara-border);
+  background: var(--novara-action-secondary);
+  color: var(--novara-action-secondary-text);
+}
+button:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+.item {
+  display: grid;
+  gap: 0.35rem;
+  padding: 1rem 0;
+  border-bottom: 1px solid var(--novara-border);
+}
+.item:last-child {
+  border: 0;
+}
+.item-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+.item p {
+  margin: 0;
+  color: var(--novara-text-secondary);
+  font-size: 0.77rem;
+}
+.badge {
+  width: max-content;
+  padding: 0.25rem 0.5rem;
+  border-radius: 99px;
+  background: var(--novara-primary-soft);
+  color: var(--novara-primary);
+  font-size: 0.64rem;
+  font-weight: 750;
+}
+.unread {
+  border-left: 3px solid var(--novara-gold);
+  padding-left: 0.8rem;
+}
+.actions {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+.success {
+  color: var(--novara-success);
+  font-size: 0.76rem;
+}
+.error {
+  color: var(--novara-danger);
+  font-size: 0.76rem;
+}
+.switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.8rem 0;
+  border-bottom: 1px solid var(--novara-border);
+}
+.switch input {
+  width: 1.1rem;
+  height: 1.1rem;
+}
+@media (max-width: 760px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
+  .hero {
+    padding: 1.25rem;
+  }
+  .hero h1 {
+    font-size: 1.65rem;
+  }
+}

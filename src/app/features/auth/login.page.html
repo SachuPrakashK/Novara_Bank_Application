@@ -1,6 +1,6 @@
 <main class="auth-page login-page">
   <section class="auth-story login-story" aria-label="Novara Bank introduction">
-    <div class="login-brand"><novara-logo /></div>
+    <div class="login-brand"><novara-logo [compact]="false" variant="dark" /></div>
     <div class="login-story-body">
       <div class="story-copy">
         <span class="eyebrow">PRIVATE DIGITAL BANKING</span>
@@ -20,7 +20,7 @@
     </div>
     <footer>© 2026 Novara Bank · Privacy · Security</footer>
   </section>
-  <section class="auth-panel"><div class="mobile-brand"><novara-logo /></div><div class="form-wrap">
+  <section class="auth-panel"><div class="mobile-brand"><novara-logo variant="light" /></div><div class="form-wrap">
     <span class="eyebrow">WELCOME BACK</span><h2>Sign in to Novara</h2><p class="intro">Access your accounts and financial overview.</p>
     @if (error()) { <div class="alert" role="alert">{{ error() }}</div> }
     @if (demoEnabled) {

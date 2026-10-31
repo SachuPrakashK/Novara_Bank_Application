@@ -64,7 +64,21 @@ Phase I.1 converts the operations proposals into decision-ready staff identity, 
 
 Phase I.2 adds a test-source-only workforce identity, entitlement, scoped authorization, revocation, concurrency, and segregation-of-duties proof of concept plus a separate userless Keycloak realm template. The POC has no runtime endpoint, banking repository, production profile, persistent privileged data, or financial capability. Mock authorization tests pass; authentic workforce provider and MFA acceptance remain blocked. Operations APIs remain deny-all, Flyway remains V1-V11, Gates A-G remain blocked, and Phase J is NO-GO.
 
+# Phase I.3 status
+
+Phase I.3 adds a reproducible localhost-only Keycloak 26.0.8 workforce environment, process-secret preflight/start/cleanup scripts, a non-human verifier client, conditional real-JWKS acceptance tests, and automated production-isolation proof. Docker API unresponsiveness blocked provider execution, so real OIDC, MFA, browser, and lifecycle acceptance remain blocked and are not inferred from configuration. The customer realm/BFF, operations deny-all, Flyway V1-V11, and financial services remain unchanged. Gates A-G remain blocked and Phase J is NO-GO.
+
 # Reversal semantics clarification
 
 Posted journals are immutable. A reversal creates a separate POSTED journal whose `reversal_of_journal_id` references the original journal. The original journal remains POSTED; it is never mutated to REVERSED. Any earlier documentation describing an in-place status change is superseded by this rule.
+
+# Phase I.3.1 status
+
+# Phase I.3.2 current status
+
+Phase I.3.2 executed the disposable workforce provider with process-only cryptographically generated local secrets. Keycloak 26.0.8 imported the isolated realm and five genuine service-token cryptographic tests passed for discovery/JWKS, signature and claims, tamper/wrong-audience/wrong-issuer rejection, and expiry.
+
+This is non-human local technical evidence only: no staff identity, MFA, browser session, production entitlement, endpoint, migration, or financial capability was added. Complete backend and UI regressions passed and cleanup closed port 8082. Gates A-G remain blocked, Phase I.4 must not start automatically, and Phase J is NO-GO.
+
+Phase I.3.1 corrected a Docker preflight false positive, added bounded read-only diagnostics, and tightened the separate workforce Compose project's resource, timeout, and cleanup behavior. After the user restored Docker Desktop, the complete backend suite passed with PostgreSQL integration 59/59 and Flyway V1–V11. Production isolation, Angular, and browser regressions also passed as recorded in `MILESTONE_3_PHASE_I_3_1_TEST_RESULTS.md`. Real Keycloak and human MFA/session acceptance remain blocked by absent approved secrets and identities. Gates A–G remain blocked and Phase J is NO-GO.
 

@@ -1,3 +1,76 @@
-import { ChangeDetectionStrategy, Component, input } from '@angular/core';
-@Component({ selector: 'novara-logo', host: { '[class.compact]': 'compact()' }, template: `<span class="mark" aria-hidden="true">N</span>@if(!compact()){<span class="wordmark">NOVARA <b>BANK</b></span>}`, styles: [`:host{display:inline-flex;align-items:center;gap:.7rem}.mark{display:grid;place-items:center;width:2.15rem;height:2.15rem;border-radius:.65rem;background:var(--novara-primary);color:#fff;font:700 1.15rem/1 var(--novara-font-display);box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}.wordmark{font-size:.82rem;letter-spacing:.14em;color:var(--novara-text-primary);font-weight:700;white-space:nowrap}.wordmark b{color:var(--novara-gold);font-weight:700}@media(max-width:1024px){:host(.compact)::after{content:'NOVARA BANK';color:var(--novara-text-primary);font-size:.82rem;font-weight:700;letter-spacing:.14em;white-space:nowrap}}`], changeDetection: ChangeDetectionStrategy.OnPush })
-export class LogoComponent { readonly compact = input(false); }
+import { DOCUMENT } from '@angular/common';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  computed,
+  inject,
+  input,
+  signal,
+} from '@angular/core';
+
+export type NovaraLogoVariant = 'auto' | 'light' | 'dark';
+
+@Component({
+  selector: 'novara-logo',
+  host: { '[class.compact]': 'compact()', '[attr.data-variant]': 'variant()' },
+  template: `@if (compact()) {
+      <img class="icon" src="/novara-icon.png" width="512" height="512" alt="Novara Bank" />
+    } @else {
+      <img class="logo" [src]="logoSource()" width="1200" height="409" alt="Novara Bank" />
+    }`,
+  styles: [
+    `
+      :host {
+        display: inline-flex;
+        flex: 0 0 auto;
+        align-items: center;
+      }
+      img {
+        display: block;
+        max-width: 100%;
+        object-fit: contain;
+      }
+      .logo {
+        width: 9.8rem;
+        height: auto;
+      }
+      .icon {
+        width: 2.55rem;
+        height: 2.55rem;
+        border-radius: 0.68rem;
+      }
+      :host(.compact) {
+        flex: 0 0 auto;
+      }
+    `,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class LogoComponent {
+  private readonly document = inject(DOCUMENT);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly automaticVariant = signal<'light' | 'dark'>('dark');
+  readonly compact = input(false);
+  readonly variant = input<NovaraLogoVariant>('auto');
+  protected readonly logoSource = computed(() => {
+    const resolved = this.variant() === 'auto' ? this.automaticVariant() : this.variant();
+    return resolved === 'dark' ? '/novara-logo-dark.png' : '/novara-logo.png';
+  });
+
+  constructor() {
+    const sync = (): void => {
+      const selected = this.document.documentElement.dataset['theme'];
+      this.automaticVariant.set(selected === 'light' ? 'light' : 'dark');
+    };
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(this.document.documentElement, {
+      attributes: true,
+      attributeFilter: ['data-theme'],
+    });
+    this.destroyRef.onDestroy(() => {
+      observer.disconnect();
+    });
+  }
+}

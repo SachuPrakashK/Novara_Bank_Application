@@ -13,7 +13,9 @@ for (const viewport of viewports) {
 
     const story = page.locator('.login-story');
     await expect(story).toBeVisible();
-    await expect(story.getByText('NOVARA BANK', { exact: true })).toBeVisible();
+    const brand = story.locator('img[alt="Novara Bank"]:visible');
+    await expect(brand).toBeVisible();
+    await expect(brand).toHaveAttribute('src', '/novara-logo-dark.png');
     await expect(page.getByRole('heading', { name: 'Sign in to Novara' })).toBeVisible();
 
     const artwork = page.locator('.banking-art');

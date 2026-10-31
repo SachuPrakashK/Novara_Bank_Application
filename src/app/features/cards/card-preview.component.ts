@@ -1,2 +1,98 @@
-import { ChangeDetectionStrategy,Component,input } from '@angular/core';import type { BankCard } from '../../core/cards/card.models';
-@Component({selector:'novara-card-preview',template:`@if(card();as c){<article class="bank-card" [attr.data-tier]="c.tier"><svg viewBox="0 0 320 190" aria-hidden="true"><path d="M-20 175C75 65 180 250 350 38"/><circle cx="272" cy="44" r="70"/></svg><header><b>NOVARA</b><span>{{c.tier}}</span></header><div class="chip" aria-hidden="true"><i></i><i></i><i></i></div><strong>{{c.maskedReference}}</strong><footer><span>{{c.cardholderName}}</span><span>{{c.expiryMonth}}/{{c.expiryYear}}</span></footer></article>}`,styles:[`:host{display:block}.bank-card{position:relative;aspect-ratio:1.586;overflow:hidden;padding:1.25rem;border-radius:1.15rem;background:linear-gradient(135deg,#071b30,#124267);color:#fff;box-shadow:var(--novara-shadow-md)}.bank-card[data-tier=GOLD]{background:linear-gradient(135deg,#12283a,#75602c)}.bank-card[data-tier=PLATINUM]{background:linear-gradient(135deg,#17242e,#556675)}svg{position:absolute;inset:0;width:100%;height:100%;opacity:.2}svg path,svg circle{fill:none;stroke:#d8b96f;stroke-width:1}.bank-card>*:not(svg){position:relative}.bank-card header,.bank-card footer{display:flex;justify-content:space-between;align-items:center}.bank-card header b{letter-spacing:.18em}.bank-card header span{font-size:.62rem}.chip{display:grid;grid-template-columns:repeat(3,1fr);width:2.8rem;height:2.15rem;margin:1.65rem 0 .8rem;border-radius:.4rem;background:#cbb06d}.chip i{border:1px solid rgba(50,45,30,.25)}.bank-card>strong{font-size:1.05rem;letter-spacing:.22em}.bank-card footer{margin-top:1rem;font-size:.62rem;letter-spacing:.08em}`],changeDetection:ChangeDetectionStrategy.OnPush})export class CardPreviewComponent{readonly card=input.required<BankCard>();}
+import { ChangeDetectionStrategy, Component, input } from '@angular/core';
+import type { BankCard } from '../../core/cards/card.models';
+@Component({
+  selector: 'novara-card-preview',
+  template: `@if (card(); as c) {
+    <article class="bank-card" [attr.data-tier]="c.tier">
+      <svg viewBox="0 0 320 190" aria-hidden="true">
+        <path d="M-20 175C75 65 180 250 350 38" />
+        <circle cx="272" cy="44" r="70" />
+      </svg>
+      <header>
+        <b>NOVARA</b><span>{{ c.tier }}</span>
+      </header>
+      <div class="chip" aria-hidden="true"><i></i><i></i><i></i></div>
+      <strong>{{ c.maskedReference }}</strong>
+      <footer>
+        <span>{{ c.cardholderName }}</span
+        ><span>{{ c.expiryMonth }}/{{ c.expiryYear }}</span>
+      </footer>
+    </article>
+  }`,
+  styles: [
+    `
+      :host {
+        display: block;
+      }
+      .bank-card {
+        position: relative;
+        aspect-ratio: 1.586;
+        overflow: hidden;
+        padding: 1.25rem;
+        border-radius: 1.15rem;
+        background: linear-gradient(135deg, #071b30, #124267);
+        color: var(--novara-brand-panel-text);
+        box-shadow: var(--novara-shadow-md);
+      }
+      .bank-card[data-tier='GOLD'] {
+        background: linear-gradient(135deg, #12283a, #75602c);
+      }
+      .bank-card[data-tier='PLATINUM'] {
+        background: linear-gradient(135deg, #17242e, #556675);
+      }
+      svg {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        opacity: 0.2;
+      }
+      svg path,
+      svg circle {
+        fill: none;
+        stroke: #d8b96f;
+        stroke-width: 1;
+      }
+      .bank-card > *:not(svg) {
+        position: relative;
+      }
+      .bank-card header,
+      .bank-card footer {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+      .bank-card header b {
+        letter-spacing: 0.18em;
+      }
+      .bank-card header span {
+        font-size: 0.62rem;
+      }
+      .chip {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        width: 2.8rem;
+        height: 2.15rem;
+        margin: 1.65rem 0 0.8rem;
+        border-radius: 0.4rem;
+        background: #cbb06d;
+      }
+      .chip i {
+        border: 1px solid rgba(50, 45, 30, 0.25);
+      }
+      .bank-card > strong {
+        font-size: 1.05rem;
+        letter-spacing: 0.22em;
+      }
+      .bank-card footer {
+        margin-top: 1rem;
+        font-size: 0.62rem;
+        letter-spacing: 0.08em;
+      }
+    `,
+  ],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+})
+export class CardPreviewComponent {
+  readonly card = input.required<BankCard>();
+}

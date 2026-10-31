@@ -9,6 +9,7 @@
   "failureFactor": 3,
   "waitIncrementSeconds": 60,
   "maxFailureWaitSeconds": 900,
+  "accessTokenLifespan": 20,
   "otpPolicyType": "totp",
   "otpPolicyAlgorithm": "HmacSHA256",
   "otpPolicyDigits": 6,
@@ -28,6 +29,27 @@
       "redirectUris": ["http://127.0.0.1:18080/login/oauth2/code/workforce-poc"],
       "webOrigins": ["http://127.0.0.1:14200"],
       "attributes": { "pkce.code.challenge.method": "S256" },
+      "protocolMappers": [
+        {
+          "name": "audience-workforce-poc-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "consentRequired": false,
+          "config": { "included.custom.audience": "novara-workforce-poc-api", "access.token.claim": "true", "id.token.claim": "false" }
+        }
+      ]
+    },
+    {
+      "clientId": "novara-workforce-verifier",
+      "name": "Disposable cryptographic verifier",
+      "enabled": true,
+      "clientAuthenticatorType": "client-secret",
+      "secret": "${NOVARA_WORKFORCE_VERIFIER_SECRET}",
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "implicitFlowEnabled": false,
+      "serviceAccountsEnabled": true,
       "protocolMappers": [
         {
           "name": "audience-workforce-poc-api",

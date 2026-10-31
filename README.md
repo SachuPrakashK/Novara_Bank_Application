@@ -54,8 +54,8 @@ src/app/features   lazy-loaded product areas
 src/styles         semantic design tokens and themes
 ```
 
-See [ARCHITECTURE.md](ARCHITECTURE.md), [SECURITY.md](SECURITY.md), and [CONTRIBUTING.md](CONTRIBUTING.md).
+See [ARCHITECTURE.md](Docs/ARCHITECTURE.md), [SECURITY.md](Docs/SECURITY.md), and [CONTRIBUTING.md](Docs/CONTRIBUTING.md).
 
 ## Banking backend
 
-The Java 21/Spring Boot backend lives in `backend/`. It provides OIDC-protected customer/account APIs, atomic double-entry internal transfers, idempotency, audit/outbox writes, and reconciliation against PostgreSQL. See [BACKEND_ARCHITECTURE.md](BACKEND_ARCHITECTURE.md), [LEDGER_DESIGN.md](LEDGER_DESIGN.md), [API_CONTRACTS.md](API_CONTRACTS.md), [DATABASE_SCHEMA.md](DATABASE_SCHEMA.md), and [RUNBOOK.md](RUNBOOK.md).
+The Java 21/Spring Boot backend lives in `backend/`. It provides OIDC-protected customer/account APIs, atomic double-entry internal transfers, idempotency, audit/outbox writes, and reconciliation against PostgreSQL. See [BACKEND_ARCHITECTURE.md](Docs/BACKEND_ARCHITECTURE.md), [LEDGER_DESIGN.md](Docs/LEDGER_DESIGN.md), [API_CONTRACTS.md](Docs/API_CONTRACTS.md), [DATABASE_SCHEMA.md](Docs/DATABASE_SCHEMA.md), and [RUNBOOK.md](Docs/RUNBOOK.md).

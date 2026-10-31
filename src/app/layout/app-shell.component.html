@@ -1,8 +1,8 @@
 <div class="shell" [class.sidebar-collapsed]="sidebarCollapsed()">
   <a class="skip-link" href="#main-content">Skip to main content</a>
-  <aside class="sidebar" [class.open]="navOpen()" [class.collapsed]="sidebarCollapsed()" aria-label="Primary navigation">
-    <div class="brand"><novara-logo [compact]="sidebarCollapsed()"/><button class="collapse-nav" type="button" (click)="toggleSidebar()" [attr.aria-expanded]="!sidebarCollapsed()" [attr.aria-label]="sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'" [attr.title]="sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"><novara-icon [name]="sidebarCollapsed() ? 'panel-left-open' : 'panel-left-close'"/></button><button class="close-nav" type="button" (click)="navOpen.set(false)" aria-label="Close navigation"><novara-icon name="close"/></button></div>
-    <nav>
+  <aside #mobileDrawer class="sidebar" [class.open]="navOpen()" [class.collapsed]="sidebarCollapsed()" aria-label="Primary navigation" tabindex="-1">
+    <div class="brand"><novara-logo [compact]="sidebarCollapsed()" [variant]="theme()"/><button class="collapse-nav" type="button" (click)="toggleSidebar()" [attr.aria-expanded]="!sidebarCollapsed()" [attr.aria-label]="sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'" [attr.title]="sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"><novara-icon [name]="sidebarCollapsed() ? 'panel-left-open' : 'panel-left-close'"/></button><button class="close-nav" type="button" (click)="navOpen.set(false)" aria-label="Close navigation"><novara-icon name="close"/></button></div>
+    <nav id="primary-navigation">
       @for (item of primaryNav; track item.path) {
         <a [routerLink]="item.path" routerLinkActive="active" (click)="navOpen.set(false)" [attr.aria-label]="sidebarCollapsed() ? item.label : null" [attr.title]="sidebarCollapsed() ? item.label : null"><novara-icon [name]="item.icon"/><span>{{ item.label }}</span></a>
       }
@@ -15,7 +15,8 @@
   @if (navOpen()) { <button class="backdrop" aria-label="Close navigation" (click)="navOpen.set(false)"></button> }
   <section class="workspace">
     <header class="topbar">
-      <button class="menu" (click)="navOpen.set(true)" aria-label="Open navigation"><novara-icon name="menu"/></button>
+      <button #mobileMenuButton class="menu" (click)="openMobileNavigation()" aria-label="Open navigation" [attr.aria-expanded]="navOpen()" aria-controls="primary-navigation"><novara-icon name="menu"/></button>
+      <novara-logo class="mobile-header-brand" [compact]="true" />
       <a class="search" routerLink="/transactions" aria-label="Search transactions"><novara-icon name="search"/><span>Search accounts and transactions</span><kbd>/</kbd></a>
       <div class="header-actions">
         <button (click)="toggleTheme()" [attr.aria-label]="'Switch to ' + (theme() === 'light' ? 'dark' : 'light') + ' mode'"><novara-icon [name]="theme() === 'light' ? 'moon' : 'sun'"/></button>
@@ -30,9 +31,6 @@
     </nav>
   </section>
 </div>
-@if (notifications.current(); as notification) {
-  <div class="toast" role="status"><novara-icon name="alert"/><span>{{ notification.message }}</span><button (click)="notifications.dismiss()" aria-label="Dismiss notification"><novara-icon name="close"/></button></div>
-}
 @if (session.sessionState() === 'warning') {
   <div class="dialog-backdrop" role="presentation">
     <section class="session-dialog" role="alertdialog" aria-modal="true" aria-labelledby="session-title" aria-describedby="session-description">
