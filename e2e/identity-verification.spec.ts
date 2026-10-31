@@ -12,7 +12,9 @@ for (const viewport of [{ width: 1440, height: 900 }, { width: 1024, height: 768
   test(`identity verification layout at ${viewport.width}px`, async ({ page }) => {
     await page.setViewportSize(viewport);
     await openVerification(page);
-    await expect(page.getByText('NOVARA BANK', { exact: true })).toBeVisible();
+    const brand = page.locator('.verification-brand img[alt="Novara Bank"]:visible');
+    await expect(brand).toBeVisible();
+    await expect(brand).toHaveAttribute('src', '/novara-logo-dark.png');
     await expect(page.getByRole('heading', { name: 'Verify your identity' })).toBeVisible();
     await expect(page.getByLabel('Verification code')).toBeVisible();
     const overflow = await page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth);

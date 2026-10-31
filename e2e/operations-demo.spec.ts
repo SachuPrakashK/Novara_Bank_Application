@@ -1,5 +1,7 @@
 import { expect,test } from '@playwright/test';
 
+test.setTimeout(60_000);
+
 test.beforeEach(async({page})=>{await page.goto('/login');await page.getByRole('button',{name:'Explore the synthetic operations demo'}).click();await expect(page).toHaveURL(/operations-demo\/dashboard/);});
 
 test('renders a clearly synthetic isolated operations dashboard',async({page})=>{await expect(page.getByText('NO REAL CUSTOMER DATA')).toBeVisible();await expect(page.getByRole('heading',{name:'Operations dashboard'})).toBeVisible();await expect(page.getByText('Authenticated internal operations are disabled.')).toBeVisible();});

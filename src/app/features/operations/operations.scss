@@ -146,6 +146,13 @@ table {
   border-collapse: collapse;
   font-size: 0.72rem;
 }
+tbody tr[role='button'] {
+  cursor: pointer;
+}
+tbody tr[role='button']:hover,
+tbody tr[role='button']:focus-visible {
+  background: var(--novara-elevated-hover);
+}
 th,
 td {
   padding: 0.8rem;
