@@ -1,5 +1,5 @@
 <div class="shell" [class.sidebar-collapsed]="sidebarCollapsed()">
-  <a class="skip-link" href="#main-content">Skip to main content</a>
+  <a class="skip-link" href="#main-content" (click)="skipToMainContent($event)">Skip to main content</a>
   <aside #mobileDrawer class="sidebar" [class.open]="navOpen()" [class.collapsed]="sidebarCollapsed()" aria-label="Primary navigation" tabindex="-1">
     <div class="brand"><novara-logo [compact]="sidebarCollapsed()" [variant]="theme()"/><button class="collapse-nav" type="button" (click)="toggleSidebar()" [attr.aria-expanded]="!sidebarCollapsed()" [attr.aria-label]="sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'" [attr.title]="sidebarCollapsed() ? 'Expand sidebar' : 'Collapse sidebar'"><novara-icon [name]="sidebarCollapsed() ? 'panel-left-open' : 'panel-left-close'"/></button><button class="close-nav" type="button" (click)="navOpen.set(false)" aria-label="Close navigation"><novara-icon name="close"/></button></div>
     <nav id="primary-navigation">
@@ -24,7 +24,7 @@
         <a class="profile" routerLink="/profile"><span class="avatar">{{ customer()?.initials ?? 'NB' }}</span><span><b>{{ customer()?.firstName ?? 'Customer' }}</b><small>{{ customer()?.tier ?? 'Novara Banking' }}</small></span></a>
       </div>
     </header>
-    <main id="main-content" tabindex="-1"><router-outlet /></main>
+    <main #mainContent id="main-content" tabindex="-1"><router-outlet /></main>
     <nav class="mobile-nav" aria-label="Mobile navigation">
       @for (item of primaryNav.slice(0, 4); track item.path) { <a [routerLink]="item.path" routerLinkActive="active"><novara-icon [name]="item.icon"/><small>{{ item.label }}</small></a> }
       <button (click)="navOpen.set(true)"><novara-icon name="menu"/><small>More</small></button>

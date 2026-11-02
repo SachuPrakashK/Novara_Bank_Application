@@ -72,9 +72,11 @@ Phase I.3 adds a reproducible localhost-only Keycloak 26.0.8 workforce environme
 
 Posted journals are immutable. A reversal creates a separate POSTED journal whose `reversal_of_journal_id` references the original journal. The original journal remains POSTED; it is never mutated to REVERSED. Any earlier documentation describing an in-place status change is superseded by this rule.
 
-# Phase I.3.1 status
+# Phase I.3.1 and I.3.2 status
 
-# Phase I.3.2 current status
+# Phase I.3.3 current status
+
+Phase I.3.3 adds repository-scoped D: cache/temp configuration and three-sample bounded Docker stability checks. C: was measured at zero free bytes; Docker API/engine connectivity timed out and logs showed VM/container I/O errors. PostgreSQL/Flyway and current Keycloak execution remain blocked without destructive recovery. Independent backend tests passed 33 with five provider tests skipped, authorization POC passed 18/18, isolation passed 1/1, Angular passed 29/29, and Playwright passed 37/37. No banking/security boundary changed; Gates A-G remain blocked and Phase J is NO-GO.
 
 Phase I.3.2 executed the disposable workforce provider with process-only cryptographically generated local secrets. Keycloak 26.0.8 imported the isolated realm and five genuine service-token cryptographic tests passed for discovery/JWKS, signature and claims, tamper/wrong-audience/wrong-issuer rejection, and expiry.
 

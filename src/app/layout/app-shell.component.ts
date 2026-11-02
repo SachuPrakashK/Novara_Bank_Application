@@ -32,6 +32,7 @@ export class AppShellComponent {
   private readonly sessionAction = viewChild<ElementRef<HTMLButtonElement>>('sessionAction');
   private readonly mobileDrawer = viewChild<ElementRef<HTMLElement>>('mobileDrawer');
   private readonly mobileMenuButton = viewChild<ElementRef<HTMLButtonElement>>('mobileMenuButton');
+  private readonly mainContent = viewChild<ElementRef<HTMLElement>>('mainContent');
   private readonly document = inject(DOCUMENT);
   protected readonly navOpen = signal(false);
   protected readonly sidebarCollapsed = signal(false);
@@ -71,6 +72,10 @@ export class AppShellComponent {
   protected openMobileNavigation(): void {
     this.navOpen.set(true);
     setTimeout(() => this.mobileDrawer()?.nativeElement.focus());
+  }
+  protected skipToMainContent(event: Event): void {
+    event.preventDefault();
+    this.mainContent()?.nativeElement.focus();
   }
   protected toggleSidebar(): void {
     this.sidebarCollapsed.update((collapsed) => !collapsed);
