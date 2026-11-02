@@ -12,3 +12,7 @@
 | Bearer/browser operations denial | **VERIFIED WITH MOCKS** |
 
 No workforce browser session chain was added. A future chain must be isolated by issuer/client, namespace, profile, and explicit deny-by-default rules.
+
+## Dual-priority rerun — 2026-11-02
+
+Genuine workforce login, logout, refresh, expiry, suspension, invalidation, revocation, reauthentication, and residual-token behavior were **NOT RUN / BLOCKED**. Required secrets and approved human identities/factors were absent, and Docker later returned HTTP 500. Prior short-lived non-human token expiry evidence remains valid but is not human session evidence.

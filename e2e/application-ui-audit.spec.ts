@@ -40,6 +40,15 @@ const operationsRoutes = [
   '/operations-demo/settings',
 ] as const;
 
+const auditViewports = [
+  { width: 320, height: 844 },
+  { width: 390, height: 844 },
+  { width: 768, height: 1024 },
+  { width: 1024, height: 900 },
+  { width: 1440, height: 900 },
+  { width: 1920, height: 1080 },
+] as const;
+
 async function enterCustomerDemo(page: Page): Promise<void> {
   await page.goto('/login');
   await page.getByRole('button', { name: 'Explore the fictional customer demo' }).click();
@@ -66,25 +75,19 @@ async function assertRouteSurface(page: Page, route: string): Promise<void> {
 }
 
 test('all customer routes remain responsive at desktop and mobile widths', async ({ page }) => {
-  test.setTimeout(240_000);
+  test.setTimeout(360_000);
   await enterCustomerDemo(page);
-  for (const viewport of [
-    { width: 1440, height: 900 },
-    { width: 390, height: 844 },
-  ]) {
+  for (const viewport of auditViewports) {
     await page.setViewportSize(viewport);
     for (const route of customerRoutes) await assertRouteSurface(page, route);
   }
 });
 
 test('all operations routes remain responsive at desktop and mobile widths', async ({ page }) => {
-  test.setTimeout(120_000);
+  test.setTimeout(180_000);
   await page.goto('/login');
   await page.getByRole('button', { name: 'Explore the synthetic operations demo' }).click();
-  for (const viewport of [
-    { width: 1440, height: 900 },
-    { width: 390, height: 844 },
-  ]) {
+  for (const viewport of auditViewports) {
     await page.setViewportSize(viewport);
     for (const route of operationsRoutes) await assertRouteSurface(page, route);
   }
@@ -115,4 +118,25 @@ test('dashboard has no horizontal overflow at every supported audit width', asyn
     );
     expect(hasDocumentOverflow, `dashboard overflow at ${width}px`).toBe(false);
   }
+});
+
+test('keyboard navigation and mobile touch targets remain usable', async ({ page }) => {
+  await enterCustomerDemo(page);
+
+  await page.keyboard.press('Tab');
+  const skipLink = page.getByRole('link', { name: 'Skip to main content' });
+  await expect(skipLink).toBeFocused();
+  await page.keyboard.press('Enter');
+  await expect(page.locator('#main-content')).toBeFocused();
+
+  await page.setViewportSize({ width: 320, height: 844 });
+  const menuButton = page.getByRole('button', { name: 'Open navigation' });
+  const menuBox = await menuButton.boundingBox();
+  expect(menuBox).not.toBeNull();
+  expect(menuBox!.width).toBeGreaterThanOrEqual(40);
+  expect(menuBox!.height).toBeGreaterThanOrEqual(40);
+  await menuButton.click();
+  await expect(page.getByRole('complementary', { name: 'Primary navigation' })).toBeFocused();
+  await page.keyboard.press('Escape');
+  await expect(menuButton).toBeFocused();
 });

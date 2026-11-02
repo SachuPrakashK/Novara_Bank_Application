@@ -34,9 +34,9 @@
   display: grid;
   flex: 0 0 auto;
   place-items: center;
-  width: 2.35rem;
-  height: 2.35rem;
-  min-height: 2.35rem;
+  width: 2.5rem;
+  height: 2.5rem;
+  min-height: 2.5rem;
   padding: 0;
   border: 1px solid var(--novara-border);
   border-radius: 0.65rem;
@@ -315,6 +315,12 @@ main {
     background: transparent;
     color: var(--novara-text-primary);
     cursor: pointer;
+  }
+  .menu {
+    width: 2.5rem;
+    height: 2.5rem;
+    min-width: 2.5rem;
+    padding: 0;
   }
   .workspace {
     margin-left: 0;

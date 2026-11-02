@@ -10,7 +10,7 @@ function Invoke-BoundedCommand([string]$Name, [scriptblock]$Command) {
             return [pscustomobject]@{ Check = $Name; Status = 'TIMEOUT'; Detail = "No response within $TimeoutSeconds seconds" }
         }
         $result = @(Receive-Job $job 2>&1) -join [Environment]::NewLine
-        $status = if ($job.State -eq 'Completed' -and $result -notmatch '(?i)failed to connect|error code:') { 'RESPONDED' } else { 'FAILED' }
+        $status = if ($job.State -eq 'Completed' -and $result -notmatch '(?i)failed to connect|error code:|request returned|500 internal server error|exited [1-9]') { 'RESPONDED' } else { 'FAILED' }
         return [pscustomobject]@{ Check = $Name; Status = $status; Detail = $result.Trim() }
     } finally {
         Stop-Job $job -ErrorAction SilentlyContinue
@@ -19,8 +19,20 @@ function Invoke-BoundedCommand([string]$Name, [scriptblock]$Command) {
 }
 
 @(
-    Invoke-BoundedCommand 'docker-version' { docker version --format 'Client={{.Client.Version}} Server={{.Server.Version}}'; if ($LASTEXITCODE -ne 0) { throw "docker version exited $LASTEXITCODE" } }
-    Invoke-BoundedCommand 'docker-info' { docker info --format 'Server={{.ServerVersion}} Containers={{.Containers}} Running={{.ContainersRunning}} Images={{.Images}} Memory={{.MemTotal}} Driver={{.Driver}}'; if ($LASTEXITCODE -ne 0) { throw "docker info exited $LASTEXITCODE" } }
+    Invoke-BoundedCommand 'docker-version' {
+        $raw = docker version --format '{{json .}}' 2>&1
+        if ($LASTEXITCODE -ne 0) { throw "docker version exited $LASTEXITCODE`: $raw" }
+        $version = $raw | ConvertFrom-Json
+        if ([string]::IsNullOrWhiteSpace($version.Server.Version)) { throw 'docker version returned no server version' }
+        "Client=$($version.Client.Version) Server=$($version.Server.Version)"
+    }
+    Invoke-BoundedCommand 'docker-info' {
+        $raw = docker info --format '{{json .}}' 2>&1
+        if ($LASTEXITCODE -ne 0) { throw "docker info exited $LASTEXITCODE`: $raw" }
+        $info = $raw | ConvertFrom-Json
+        if ([string]::IsNullOrWhiteSpace($info.ServerVersion) -or $info.MemTotal -le 0) { throw 'docker info returned invalid server fields' }
+        "Server=$($info.ServerVersion) Containers=$($info.Containers) Running=$($info.ContainersRunning) Images=$($info.Images) Memory=$($info.MemTotal) Driver=$($info.Driver)"
+    }
     Invoke-BoundedCommand 'docker-context' { docker context ls; if ($LASTEXITCODE -ne 0) { throw "docker context exited $LASTEXITCODE" } }
     Invoke-BoundedCommand 'docker-containers' { docker ps --format 'table {{.Names}}\t{{.Image}}\t{{.Status}}\t{{.Ports}}'; if ($LASTEXITCODE -ne 0) { throw "docker ps exited $LASTEXITCODE" } }
     Invoke-BoundedCommand 'wsl-status' { wsl.exe --status; if ($LASTEXITCODE -ne 0) { throw "wsl status exited $LASTEXITCODE" } }
